@@ -1,4 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import BlogsPage from '../pages/public/BlogsPage';
+import DoctorsPage from '../pages/public/DoctorsPage';
 import HomePage from '../pages/public/HomePage';
 import { ROUTE_PATHS } from './routePaths';
 
@@ -17,6 +19,8 @@ export function AppRouter() {
   return (
     <Routes>
       <Route path={ROUTE_PATHS.public.home} element={<HomePage />} />
+      <Route path={ROUTE_PATHS.public.doctors} element={<DoctorsPage />} />
+      <Route path={ROUTE_PATHS.public.blogs} element={<BlogsPage />} />
       <Route path="/home" element={<Navigate to={ROUTE_PATHS.public.home} replace />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
