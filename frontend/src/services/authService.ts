@@ -113,8 +113,12 @@ async function refresh(refreshToken: string): Promise<Pick<AuthSession, 'accessT
 }
 
 async function logout(): Promise<void> {
+	const current = getSession();
 	try {
-		await apiRequest('/auth/logout', { method: 'POST' });
+		await apiRequest('/auth/logout', {
+			method: 'POST',
+			body: current?.refreshToken ? { refreshToken: current.refreshToken } : {}
+		});
 	} finally {
 		clearSession();
 	}

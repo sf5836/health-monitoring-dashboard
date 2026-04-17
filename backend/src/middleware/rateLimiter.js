@@ -4,6 +4,8 @@ function createRateLimiter(options) {
   return rateLimit({
     windowMs: options.windowMs,
     max: options.max,
+    skipSuccessfulRequests: Boolean(options.skipSuccessfulRequests),
+    skipFailedRequests: Boolean(options.skipFailedRequests),
     standardHeaders: true,
     legacyHeaders: false,
     message: {
@@ -17,6 +19,7 @@ function createRateLimiter(options) {
 const authLoginLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 10,
+  skipSuccessfulRequests: true,
   message: 'Too many login attempts. Please try again in 15 minutes.'
 });
 

@@ -3,7 +3,9 @@ const PatientProfile = require('../models/PatientProfile');
 const DoctorProfile = require('../models/DoctorProfile');
 const {
   signAccessToken,
-  signRefreshToken,
+  issueRefreshToken,
+  rotateRefreshToken,
+  revokeRefreshToken,
   verifyRefreshToken,
   hashPassword,
   verifyPassword
@@ -55,13 +57,15 @@ async function registerPatient(req, res, next) {
       connectedDoctorIds: []
     });
 
+    const refresh = await issueRefreshToken(user);
+
     res.status(201).json({
       success: true,
       message: 'Patient registered successfully',
       data: {
         user: sanitizeUser(user),
         accessToken: signAccessToken(user),
-        refreshToken: signRefreshToken(user)
+        refreshToken: refresh.token
       }
     });
   } catch (error) {
@@ -119,13 +123,15 @@ async function registerDoctor(req, res, next) {
       approvalStatus: 'pending'
     });
 
+    const refresh = await issueRefreshToken(user);
+
     res.status(201).json({
       success: true,
       message: 'Doctor registered successfully. Approval is pending.',
       data: {
         user: sanitizeUser(user),
         accessToken: signAccessToken(user),
-        refreshToken: signRefreshToken(user)
+        refreshToken: refresh.token
       }
     });
   } catch (error) {
@@ -157,13 +163,15 @@ async function login(req, res, next) {
       throw error;
     }
 
+    const refresh = await issueRefreshToken(user);
+
     res.json({
       success: true,
       message: 'Login successful',
       data: {
         user: sanitizeUser(user),
         accessToken: signAccessToken(user),
-        refreshToken: signRefreshToken(user)
+        refreshToken: refresh.token
       }
     });
   } catch (error) {
@@ -189,13 +197,21 @@ async function adminLogin(req, res, next) {
       throw badRequest('Invalid admin credentials');
     }
 
+    if (!user.isActive) {
+      const error = new Error('Account is inactive');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const refresh = await issueRefreshToken(user);
+
     res.json({
       success: true,
       message: 'Admin login successful',
       data: {
         user: sanitizeUser(user),
         accessToken: signAccessToken(user),
-        refreshToken: signRefreshToken(user)
+        refreshToken: refresh.token
       }
     });
   } catch (error) {
@@ -214,17 +230,20 @@ async function refresh(req, res, next) {
     const user = await User.findById(payload.sub);
 
     if (!user || !user.isActive) {
+      await revokeRefreshToken(token, { userId: payload.sub });
       const error = new Error('User not found or inactive');
       error.statusCode = 401;
       throw error;
     }
+
+    const rotated = await rotateRefreshToken(token, user, payload);
 
     res.json({
       success: true,
       message: 'Token refreshed',
       data: {
         accessToken: signAccessToken(user),
-        refreshToken: signRefreshToken(user)
+        refreshToken: rotated.token
       }
     });
   } catch (error) {
@@ -236,11 +255,21 @@ async function refresh(req, res, next) {
   }
 }
 
-async function logout(_req, res) {
-  res.json({
-    success: true,
-    message: 'Logout successful'
-  });
+async function logout(req, res, next) {
+  try {
+    const refreshToken = req.body?.refreshToken;
+
+    if (refreshToken) {
+      await revokeRefreshToken(refreshToken);
+    }
+
+    res.json({
+      success: true,
+      message: 'Logout successful'
+    });
+  } catch (error) {
+    next(error);
+  }
 }
 
 async function me(req, res, next) {
@@ -249,6 +278,12 @@ async function me(req, res, next) {
     if (!user) {
       const error = new Error('User not found');
       error.statusCode = 404;
+      throw error;
+    }
+
+    if (!user.isActive) {
+      const error = new Error('Account is inactive');
+      error.statusCode = 403;
       throw error;
     }
 

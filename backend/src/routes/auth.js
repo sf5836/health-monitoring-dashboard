@@ -7,7 +7,8 @@ const {
 	registerPatientSchema,
 	registerDoctorSchema,
 	loginSchema,
-	refreshSchema
+	refreshSchema,
+	logoutSchema
 } = require('../schemas/authSchemas');
 
 const router = express.Router();
@@ -38,7 +39,7 @@ router.post(
 	authController.adminLogin
 );
 router.post('/refresh', authGeneralLimiter, validate({ body: refreshSchema }), authController.refresh);
-router.post('/logout', authController.logout);
+router.post('/logout', authGeneralLimiter, validate({ body: logoutSchema }), authController.logout);
 router.get('/me', verifyToken, authController.me);
 
 module.exports = router;

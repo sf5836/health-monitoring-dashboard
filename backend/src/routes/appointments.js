@@ -21,6 +21,11 @@ router.patch(
   validate({ params: appointmentIdParamsSchema, body: updatePatientAppointmentSchema }),
   appointmentController.updateMyAppointment
 );
+router.post(
+  '/me/:appointmentId/cancel',
+  validate({ params: appointmentIdParamsSchema }),
+  appointmentController.cancelMyAppointment
+);
 router.delete(
   '/me/:appointmentId',
   validate({ params: appointmentIdParamsSchema }),

@@ -1,6 +1,7 @@
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const { createNotification } = require('../services/notificationService');
+const { getIO } = require('../sockets/socketState');
 
 async function getMyConversations(req, res, next) {
   try {
@@ -103,6 +104,31 @@ async function sendMessage(req, res, next) {
         })
       )
     );
+
+    const io = getIO();
+    if (io) {
+      const messagePayload = {
+        conversationId: String(conversation._id),
+        message
+      };
+
+      io.to(`room:conversation:${String(conversation._id)}`).emit('chat:message:new', messagePayload);
+
+      conversation.participantIds.forEach((participantId) => {
+        io.to(`room:user:${String(participantId)}`).emit('chat:message:new', messagePayload);
+      });
+
+      const summary = {
+        _id: String(conversation._id),
+        participantIds: conversation.participantIds.map((id) => String(id)),
+        lastMessageAt: conversation.lastMessageAt,
+        updatedAt: conversation.updatedAt
+      };
+
+      summary.participantIds.forEach((participantId) => {
+        io.to(`room:user:${participantId}`).emit('chat:conversation:updated', summary);
+      });
+    }
 
     res.status(201).json({
       success: true,

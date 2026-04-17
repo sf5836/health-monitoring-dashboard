@@ -1,61 +1,96 @@
 const mongoose = require('mongoose');
 
-const Notification = require('../models/Notification');
-const { markNotificationRead } = require('../services/notificationService');
+const {
+	markNotificationRead,
+	markAllNotificationsRead,
+	listNotifications
+} = require('../services/notificationService');
+
+function isObjectId(value) {
+	return mongoose.Types.ObjectId.isValid(String(value || ''));
+}
+
+function socketError(socket, event, message) {
+	socket.emit(event, { success: false, message });
+}
 
 module.exports = function notificationHandler(io) {
 	io.on('connection', (socket) => {
-		const userId = socket.handshake.auth?.userId || socket.handshake.query?.userId;
+		const userId = socket.data?.user?.id;
 
-		if (userId && mongoose.Types.ObjectId.isValid(String(userId))) {
-			socket.join(`room:user:${String(userId)}`);
+		if (!userId || !isObjectId(userId)) {
+			socket.disconnect(true);
+			return;
 		}
 
-		socket.on('notification:join', ({ userId: joinUserId }) => {
-			if (!joinUserId || !mongoose.Types.ObjectId.isValid(String(joinUserId))) {
-				return;
-			}
+		socket.join(`room:user:${String(userId)}`);
 
-			socket.join(`room:user:${String(joinUserId)}`);
-		});
-
-		socket.on('notification:read', async ({ notificationId, userId: payloadUserId }) => {
+		socket.on('notification:read', async ({ notificationId } = {}) => {
 			try {
-				const resolvedUserId = payloadUserId || userId;
-				if (
-					!resolvedUserId ||
-					!notificationId ||
-					!mongoose.Types.ObjectId.isValid(String(resolvedUserId)) ||
-					!mongoose.Types.ObjectId.isValid(String(notificationId))
-				) {
+				if (!notificationId || !isObjectId(notificationId)) {
+					socketError(socket, 'notification:error', 'Valid notificationId is required');
 					return;
 				}
 
 				await markNotificationRead({
-					userId: String(resolvedUserId),
+					userId: String(userId),
 					notificationId: String(notificationId)
 				});
 			} catch (error) {
 				console.error('[socket:notification] mark read failed:', error.message);
+				socketError(socket, 'notification:error', 'Failed to mark notification as read');
 			}
 		});
 
-		socket.on('notification:list', async ({ userId: payloadUserId, limit = 20 } = {}) => {
+		socket.on('notification:read_all', async () => {
 			try {
-				const resolvedUserId = payloadUserId || userId;
-				if (!resolvedUserId || !mongoose.Types.ObjectId.isValid(String(resolvedUserId))) {
-					return;
-				}
+				await markAllNotificationsRead({ userId: String(userId) });
+			} catch (error) {
+				console.error('[socket:notification] mark all read failed:', error.message);
+				socketError(socket, 'notification:error', 'Failed to mark all notifications as read');
+			}
+		});
 
-				const notifications = await Notification.find({ userId: resolvedUserId })
-					.sort({ createdAt: -1 })
-					.limit(Math.min(Number(limit) || 20, 100))
-					.lean();
+		socket.on('notification:sync', async ({ since, limit = 20 } = {}) => {
+			try {
+				const result = await listNotifications({
+					userId: String(userId),
+					since,
+					limit
+				});
 
-				socket.emit('notification:list', notifications);
+				socket.emit('notification:sync', {
+					notifications: result.notifications,
+					unreadCount: result.unreadCount,
+					since: since || null,
+					serverTime: new Date().toISOString()
+				});
+			} catch (error) {
+				console.error('[socket:notification] sync failed:', error.message);
+				socketError(socket, 'notification:error', 'Failed to sync notifications');
+			}
+		});
+
+		socket.on('notification:list', async ({ limit = 20 } = {}) => {
+			try {
+				const result = await listNotifications({
+					userId: String(userId),
+					limit
+				});
+
+				socket.emit('notification:list', {
+					notifications: result.notifications,
+					unreadCount: result.unreadCount,
+					serverTime: new Date().toISOString()
+				});
 			} catch (error) {
 				console.error('[socket:notification] list failed:', error.message);
+				socketError(socket, 'notification:error', 'Failed to list notifications');
 			}
+		});
+
+		socket.emit('notification:sync:required', {
+			reason: socket.recovered ? 'recovered_connection' : 'fresh_connection'
 		});
 	});
 };

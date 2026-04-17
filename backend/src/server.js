@@ -19,6 +19,7 @@ const appointmentRoutes = require('./routes/appointments');
 const prescriptionRoutes = require('./routes/prescriptions');
 const chatHandler = require('./sockets/chatHandler');
 const notificationHandler = require('./sockets/notificationHandler');
+const authenticateSocket = require('./sockets/authenticateSocket');
 const { setIO } = require('./sockets/socketState');
 
 const app = express();
@@ -28,8 +29,14 @@ const io = new Server(server, {
   cors: {
     origin: env.clientOrigin,
     credentials: true
+  },
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 2 * 60 * 1000,
+    skipMiddlewares: false
   }
 });
+
+io.use(authenticateSocket);
 
 setIO(io);
 

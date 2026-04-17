@@ -1,0 +1,58 @@
+name: Backend CI
+
+on:
+  push:
+    paths:
+      - backend/**
+      - .github/workflows/backend-ci.yml
+  pull_request:
+    paths:
+      - backend/**
+      - .github/workflows/backend-ci.yml
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      NODE_ENV: test
+      PORT: 5000
+      CLIENT_ORIGIN: http://localhost:5173
+      MONGO_URI: mongodb://127.0.0.1:27017/healthmonitorpro
+      JWT_ACCESS_PRIVATE_KEY: healthmonitorpro-ci-access-secret
+      JWT_REFRESH_PRIVATE_KEY: healthmonitorpro-ci-refresh-secret
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Initialize DB schema
+        run: npm run db:init
+
+      - name: Run CI test suite
+        run: npm run test:ci

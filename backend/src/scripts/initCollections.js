@@ -12,6 +12,7 @@ const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const Notification = require('../models/Notification');
 const AuditLog = require('../models/AuditLog');
+const RefreshToken = require('../models/RefreshToken');
 
 const models = [
   User,
@@ -24,7 +25,8 @@ const models = [
   Conversation,
   Message,
   Notification,
-  AuditLog
+  AuditLog,
+  RefreshToken
 ];
 
 async function initCollections() {

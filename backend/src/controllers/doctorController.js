@@ -184,6 +184,11 @@ async function getMyPatientDetail(req, res, next) {
       .filter((entry) => String(entry.doctorId) === String(doctorId))
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
+    const profileForDoctor = {
+      ...profile.toObject(),
+      doctorNotes
+    };
+
     const [patientUser, latestVitals, recentAppointments, prescriptionCount] =
       await Promise.all([
         User.findOne({ _id: patientId, role: 'patient' })
@@ -205,7 +210,7 @@ async function getMyPatientDetail(req, res, next) {
       data: {
         patient: {
           user: patientUser,
-          profile,
+          profile: profileForDoctor,
           doctorNotes,
           latestVitals,
           recentAppointments,
@@ -500,11 +505,21 @@ async function updateMyBlog(req, res, next) {
       throw error;
     }
 
+    const previousStatus = blog.status;
+
     const allowedFields = ['title', 'excerpt', 'content', 'coverImageUrl', 'category', 'tags'];
     for (const field of allowedFields) {
       if (Object.prototype.hasOwnProperty.call(req.body, field)) {
         blog[field] = req.body[field];
       }
+    }
+
+    if (previousStatus !== 'draft') {
+      // Any edit after moderation must return to draft and be re-submitted.
+      blog.status = 'draft';
+      blog.submittedAt = undefined;
+      blog.publishedAt = undefined;
+      blog.rejectionReason = undefined;
     }
 
     await blog.save();
