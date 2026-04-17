@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import BlogsPage from '../pages/public/BlogsPage';
 import DoctorsPage from '../pages/public/DoctorsPage';
 import HomePage from '../pages/public/HomePage';
+import RegisterPage from '../pages/public/RegisterPage';
 import { ROUTE_PATHS } from './routePaths';
 
 function NotFoundPage() {
@@ -21,6 +22,7 @@ export function AppRouter() {
       <Route path={ROUTE_PATHS.public.home} element={<HomePage />} />
       <Route path={ROUTE_PATHS.public.doctors} element={<DoctorsPage />} />
       <Route path={ROUTE_PATHS.public.blogs} element={<BlogsPage />} />
+      <Route path={ROUTE_PATHS.auth.register} element={<RegisterPage />} />
       <Route path="/home" element={<Navigate to={ROUTE_PATHS.public.home} replace />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
