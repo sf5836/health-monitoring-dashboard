@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "db:init": "node src/scripts/initCollections.js",
-    "db:seed": "node src/scripts/seedData.js",
+    "db:init": "echo \"No db init script configured\"",
+    "db:seed": "echo \"No db seed script configured\"",
     "test": "echo \"No tests configured\"",
     "test:unit": "echo \"No unit tests configured\"",
     "test:integration": "echo \"No integration tests configured\"",
