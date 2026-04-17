@@ -1,1 +1,0 @@
-export const APP_NAME = 'HealthMonitor Pro';

@@ -2,9 +2,10 @@
 
 > **How to use:** Open VS Code with the Stitch MCP server connected.
 > For each screen below, copy the prompt into Stitch exactly as written.
-> Each prompt includes the full design context so you can run them independently.
+> Global design scheme is loaded from `.stitch/DESIGN.md` and should be assumed for all screen prompts below.
+> You only need to repeat design tokens in a prompt when you intentionally want to override defaults.
 
-## DESIGN SYSTEM (Reference — include in every prompt if needed)
+## GLOBAL DESIGN SYSTEM (Loaded once)
 
 ```
 Color System:
