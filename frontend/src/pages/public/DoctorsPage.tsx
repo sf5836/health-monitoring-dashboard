@@ -61,8 +61,8 @@ export default function DoctorsPage() {
             <Link to="/">Home</Link>
             <Link to="/doctors">Doctors</Link>
             <Link to="/blogs">Blogs</Link>
-            <a href="#">About</a>
-            <a href="#">Contact</a>
+            <a href="/#about">About</a>
+            <a href="/#contact">Contact</a>
           </nav>
           <div className="hm-auth-actions">
             <Link to="/login" className="hm-btn hm-btn-outline">
@@ -174,7 +174,9 @@ export default function DoctorsPage() {
                       <Link className="hm-btn hm-btn-outline" to={`/doctors/${doctor.userId?._id}`}>
                         View Profile
                       </Link>
-                      <button className="hm-btn hm-btn-primary">Connect</button>
+                      <Link className="hm-btn hm-btn-primary" to="/login">
+                        Connect
+                      </Link>
                     </div>
                   </div>
                 </article>

@@ -12,13 +12,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [infoMessage, setInfoMessage] = useState('');
 
   const handleLogin = async (event: FormEvent) => {
     event.preventDefault();
     setErrorMessage('');
+    setInfoMessage('');
     setLoading(true);
     try {
       const session = await authService.login(email, password);
@@ -42,14 +41,10 @@ export default function LoginPage() {
 
   const handleForgot = (event: FormEvent) => {
     event.preventDefault();
-    // API integration will be connected in auth implementation phase.
-    window.alert('Reset payload is ready for API integration.');
-  };
-
-  const setOtpDigit = (index: number, value: string) => {
-    const next = [...otp];
-    next[index] = value.slice(-1);
-    setOtp(next);
+    setErrorMessage('');
+    setInfoMessage(
+      'Password reset flow will be enabled in the next auth release. Contact support for urgent access recovery.'
+    );
   };
 
   return (
@@ -115,7 +110,7 @@ export default function LoginPage() {
             <div className="hm-divider">or</div>
 
             <p className="hm-login-note">
-              Signing in as Admin? <a href="#">Use the admin portal</a>
+              Signing in as Admin? <Link to="/admin/login">Use the admin portal</Link>
             </p>
 
             <p className="hm-register-footer">
@@ -125,47 +120,19 @@ export default function LoginPage() {
         ) : (
           <form className="hm-login-form" onSubmit={handleForgot}>
             <h2>Reset Your Password</h2>
-            <p className="hm-login-subtext">Enter your email address and we&apos;ll send you an OTP</p>
+            <p className="hm-login-subtext">
+              Enter your account email to request a secure password reset link.
+            </p>
 
             <label>
               Email Address
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </label>
 
-            <button type="button" className="hm-btn hm-btn-primary hm-btn-block">
-              Send OTP
-            </button>
-
-            <div className="hm-otp-grid">
-              {otp.map((digit, index) => (
-                <input
-                  key={`otp-${index}`}
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => setOtpDigit(index, e.target.value)}
-                />
-              ))}
-            </div>
-
-            <label>
-              New Password
-              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
-            </label>
-
-            <label>
-              Confirm Password
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-            </label>
-
             <button type="submit" className="hm-btn hm-btn-primary hm-btn-block">
-              Reset Password
+              Request Password Reset
             </button>
+            {infoMessage ? <p className="hm-login-subtext">{infoMessage}</p> : null}
 
             <button type="button" className="hm-link-btn" onClick={() => setMode('login')}>
               Back to Login

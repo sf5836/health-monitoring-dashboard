@@ -106,8 +106,8 @@ export default function DoctorDetailPage() {
             <Link to="/">Home</Link>
             <Link to="/doctors">Doctors</Link>
             <Link to="/blogs">Blogs</Link>
-            <a href="#">About</a>
-            <a href="#">Contact</a>
+            <a href="/#about">About</a>
+            <a href="/#contact">Contact</a>
           </nav>
           <div className="hm-auth-actions">
             <Link to="/login" className="hm-btn hm-btn-outline">
@@ -141,8 +141,12 @@ export default function DoctorDetailPage() {
                 <span className="dot" /> Available Today
               </span>
               <div className="hm-doctor-hero-actions">
-                <button className="hm-btn hm-btn-primary">Connect as Patient</button>
-                <button className="hm-btn hm-btn-outline">Book Appointment</button>
+                <Link to="/login" className="hm-btn hm-btn-primary">
+                  Connect as Patient
+                </Link>
+                <Link to="/login" className="hm-btn hm-btn-outline">
+                  Book Appointment
+                </Link>
               </div>
             </div>
           </div>
@@ -164,7 +168,7 @@ export default function DoctorDetailPage() {
 
         <section className="hm-profile-about-layout">
           <article className="hm-about-main-card">
-            <h2>About Dr. Sarah Ahmed</h2>
+            <h2>About {doctor.userId?.fullName || 'Doctor'}</h2>
             <p>{doctor.bio || 'No biography available for this doctor yet.'}</p>
 
             <h3>Languages</h3>
@@ -199,13 +203,17 @@ export default function DoctorDetailPage() {
                 <input type="radio" name="type" /> Teleconsult
               </label>
               <input type="date" />
-              <button className="hm-btn hm-btn-primary hm-btn-block">Check Availability</button>
+              <Link to="/login" className="hm-btn hm-btn-primary hm-btn-block">
+                Check Availability
+              </Link>
             </section>
 
             <section className="hm-connect-card">
               <h3>Connect as Patient</h3>
               <p>Securely connect for trend review, care plans, and digital follow-ups.</p>
-              <button className="hm-btn hm-btn-primary hm-btn-block">Connect Now</button>
+              <Link to="/login" className="hm-btn hm-btn-primary hm-btn-block">
+                Connect Now
+              </Link>
             </section>
           </aside>
         </section>

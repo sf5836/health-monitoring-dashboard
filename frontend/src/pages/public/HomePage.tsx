@@ -83,7 +83,9 @@ export default function HomePage() {
               platform.
             </p>
             <div className="hm-hero-actions">
-              <button className="hm-btn hm-btn-primary">Get Started Free</button>
+              <Link to="/register" className="hm-btn hm-btn-primary">
+                Get Started Free
+              </Link>
               <Link to="/doctors" className="hm-btn hm-btn-outline">
                 Find a Doctor
               </Link>
@@ -124,7 +126,9 @@ export default function HomePage() {
           <div className="hm-section-head">
             <h2>Our Verified Specialists</h2>
             <p>Connect with certified doctors across multiple specializations</p>
-            <button className="hm-btn hm-btn-outline">View All</button>
+            <Link to="/doctors" className="hm-btn hm-btn-outline">
+              View All
+            </Link>
           </div>
 
           <div className="hm-grid-3">
@@ -136,7 +140,9 @@ export default function HomePage() {
                 <p className="hm-meta">{'★★★★★'} {doctor.rating}</p>
                 <p className="hm-meta">Experience: {doctor.exp}</p>
                 <p className="hm-meta">Fee: {doctor.fee}</p>
-                <button className="hm-btn hm-btn-outline hm-btn-block">View Profile</button>
+                <Link to="/doctors" className="hm-btn hm-btn-outline hm-btn-block">
+                  View Profile
+                </Link>
               </article>
             ))}
           </div>
@@ -207,7 +213,9 @@ export default function HomePage() {
             ))}
           </div>
           <div className="hm-section-cta">
-            <button className="hm-btn hm-btn-outline">View All Articles</button>
+            <Link to="/blogs" className="hm-btn hm-btn-outline">
+              View All Articles
+            </Link>
           </div>
         </div>
       </section>
@@ -313,10 +321,10 @@ export default function HomePage() {
           <div>
             <h3>Quick Links</h3>
             <ul>
-              <li>Home</li>
-              <li>Doctors</li>
-              <li>Blogs</li>
-              <li>Contact</li>
+              <li><Link to="/">Home</Link></li>
+              <li><Link to="/doctors">Doctors</Link></li>
+              <li><Link to="/blogs">Blogs</Link></li>
+              <li><a href="#contact">Contact</a></li>
             </ul>
           </div>
           <div>

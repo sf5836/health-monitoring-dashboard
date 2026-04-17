@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import chatService, { type ChatConversation, type ChatMessage } from '../../services/chatService';
 import authService from '../../services/authService';
 import { ApiError } from '../../services/apiClient';
+import { useSocket } from '../../hooks/useSocket';
 
 export default function DoctorMessagesPage() {
   const session = authService.getSession();
@@ -11,6 +12,7 @@ export default function DoctorMessagesPage() {
   const [draft, setDraft] = useState('');
   const [search, setSearch] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const { connect, on } = useSocket();
 
   useEffect(() => {
     chatService
@@ -29,6 +31,23 @@ export default function DoctorMessagesPage() {
       .then(setMessages)
       .catch((error: unknown) => setErrorMessage(error instanceof ApiError ? error.message : 'Failed to load messages'));
   }, [activeConversationId]);
+
+  useEffect(() => {
+    if (!session) {
+      return;
+    }
+    connect();
+    const unsubscribe = on<{ conversationId: string; message: ChatMessage }>('chat:message:new', (payload) => {
+      if (!payload?.conversationId || !payload?.message) {
+        return;
+      }
+      if (payload.conversationId !== activeConversationId) {
+        return;
+      }
+      setMessages((prev) => (prev.some((item) => item._id === payload.message._id) ? prev : [...prev, payload.message]));
+    });
+    return () => unsubscribe();
+  }, [session?.user.id, activeConversationId, connect, on]);
 
   const visible = useMemo(() => {
     const needle = search.trim().toLowerCase();

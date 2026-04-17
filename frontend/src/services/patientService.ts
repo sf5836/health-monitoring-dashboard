@@ -67,6 +67,65 @@ export type PatientDashboard = {
 	upcomingAppointments: DashboardAppointment[];
 };
 
+export type VitalRiskLevel = 'normal' | 'medium' | 'high';
+
+export type PatientVitalRecord = {
+	_id: string;
+	datetime: string;
+	bloodPressure?: { systolic?: number; diastolic?: number };
+	heartRate?: number;
+	spo2?: number;
+	temperatureC?: number;
+	glucose?: { value?: number; mode?: 'fasting' | 'post_meal' | 'random' };
+	weightKg?: number;
+	notes?: string;
+	riskLevel?: VitalRiskLevel;
+	riskReasons?: string[];
+	createdAt?: string;
+	updatedAt?: string;
+};
+
+export type PatientVitalPayload = {
+	datetime?: string;
+	bloodPressure?: { systolic?: number; diastolic?: number };
+	heartRate?: number;
+	spo2?: number;
+	temperatureC?: number;
+	glucose?: { value?: number; mode?: 'fasting' | 'post_meal' | 'random' };
+	weightKg?: number;
+	notes?: string;
+};
+
+export type PatientTrends = {
+	periodDays: number;
+	totalRecords: number;
+	average: {
+		heartRate: number | null;
+		spo2: number | null;
+		temperatureC: number | null;
+		weightKg: number | null;
+		systolic: number | null;
+		diastolic: number | null;
+	};
+	vitals: PatientVitalRecord[];
+};
+
+export type PatientPrescription = {
+	_id: string;
+	doctorId: {
+		_id: string;
+		fullName?: string;
+		email?: string;
+		phone?: string;
+	};
+	diagnosis?: string;
+	medications: Array<{ name: string; dosage?: string; frequency?: string; duration?: string }>;
+	instructions?: string;
+	followUpDate?: string;
+	issuedAt: string;
+	pdfUrl?: string;
+};
+
 async function getMyDoctors(): Promise<ConnectedDoctor[]> {
 	const data = await apiRequest<{ doctors: ConnectedDoctor[] }>('/patients/me/doctors', {
 		auth: true
@@ -136,6 +195,57 @@ async function cancelMyAppointment(appointmentId: string): Promise<PatientAppoin
 	return data.appointment;
 }
 
+async function getMyVitals(limit = 100): Promise<PatientVitalRecord[]> {
+	const data = await apiRequest<{ vitals: PatientVitalRecord[] }>(`/vitals/me?limit=${limit}`, {
+		auth: true
+	});
+	return data.vitals;
+}
+
+async function createMyVital(payload: PatientVitalPayload): Promise<PatientVitalRecord> {
+	const data = await apiRequest<{ vital: PatientVitalRecord }>('/vitals/me', {
+		method: 'POST',
+		body: payload,
+		auth: true
+	});
+	return data.vital;
+}
+
+async function updateMyVital(vitalId: string, payload: PatientVitalPayload): Promise<PatientVitalRecord> {
+	const data = await apiRequest<{ vital: PatientVitalRecord }>(`/vitals/me/${vitalId}`, {
+		method: 'PATCH',
+		body: payload,
+		auth: true
+	});
+	return data.vital;
+}
+
+async function deleteMyVital(vitalId: string): Promise<void> {
+	await apiRequest(`/vitals/me/${vitalId}`, {
+		method: 'DELETE',
+		auth: true
+	});
+}
+
+async function getMyTrends(days = 30): Promise<PatientTrends> {
+	return apiRequest<PatientTrends>(`/vitals/me/trends?days=${days}`, {
+		auth: true
+	});
+}
+
+async function getMyPrescriptions(): Promise<PatientPrescription[]> {
+	const data = await apiRequest<{ prescriptions: PatientPrescription[] }>('/prescriptions/me', {
+		auth: true
+	});
+	return data.prescriptions;
+}
+
+async function getPrescriptionPdf(prescriptionId: string): Promise<{ prescriptionId: string; pdfUrl: string }> {
+	return apiRequest<{ prescriptionId: string; pdfUrl: string }>(`/prescriptions/me/${prescriptionId}/pdf`, {
+		auth: true
+	});
+}
+
 const patientService = {
 	getMyDashboard,
 	getMyDoctors,
@@ -144,7 +254,14 @@ const patientService = {
 	getMyAppointments,
 	createMyAppointment,
 	updateMyAppointment,
-	cancelMyAppointment
+	cancelMyAppointment,
+	getMyVitals,
+	createMyVital,
+	updateMyVital,
+	deleteMyVital,
+	getMyTrends,
+	getMyPrescriptions,
+	getPrescriptionPdf
 };
 
 export default patientService;

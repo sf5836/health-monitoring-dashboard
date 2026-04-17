@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ApiError } from '../../services/apiClient';
 import authService from '../../services/authService';
 import chatService, { type ChatConversation, type ChatMessage } from '../../services/chatService';
+import { useSocket } from '../../hooks/useSocket';
 
 function formatDateLabel(dateInput?: string): string {
   if (!dateInput) {
@@ -21,6 +22,7 @@ export default function MessagesPage() {
   const [loadingConversations, setLoadingConversations] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const { connect, on } = useSocket();
 
   useEffect(() => {
     if (!session) {
@@ -62,6 +64,23 @@ export default function MessagesPage() {
     }
     loadMessages(activeConversationId);
   }, [activeConversationId]);
+
+  useEffect(() => {
+    if (!session) {
+      return;
+    }
+    connect();
+    const unsubscribe = on<{ conversationId: string; message: ChatMessage }>('chat:message:new', (payload) => {
+      if (!payload?.conversationId || !payload?.message) {
+        return;
+      }
+      if (payload.conversationId !== activeConversationId) {
+        return;
+      }
+      setMessages((prev) => (prev.some((item) => item._id === payload.message._id) ? prev : [...prev, payload.message]));
+    });
+    return () => unsubscribe();
+  }, [session?.user.id, activeConversationId, connect, on]);
 
   const visibleConversations = useMemo(() => {
     const needle = search.trim().toLowerCase();
