@@ -17,6 +17,7 @@ const adminRoutes = require('./routes/admin');
 const chatRoutes = require('./routes/chat');
 const appointmentRoutes = require('./routes/appointments');
 const prescriptionRoutes = require('./routes/prescriptions');
+const notificationRoutes = require('./routes/notifications');
 const chatHandler = require('./sockets/chatHandler');
 const notificationHandler = require('./sockets/notificationHandler');
 const authenticateSocket = require('./sockets/authenticateSocket');
@@ -58,6 +59,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 chatHandler(io);
 notificationHandler(io);

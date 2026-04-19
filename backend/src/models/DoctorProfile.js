@@ -19,6 +19,8 @@ const doctorProfileSchema = new mongoose.Schema(
 		experienceYears: { type: Number },
 		hospital: { type: String, trim: true },
 		fee: { type: Number },
+		rating: { type: Number, min: 0, max: 5, default: 5 },
+		reviewsCount: { type: Number, min: 0, default: 0 },
 		bio: { type: String, trim: true },
 		availability: { type: String, trim: true },
 		approvalStatus: {
@@ -35,6 +37,7 @@ const doctorProfileSchema = new mongoose.Schema(
 
 doctorProfileSchema.index({ approvalStatus: 1 });
 doctorProfileSchema.index({ specialization: 1 });
+doctorProfileSchema.index({ rating: -1, reviewsCount: -1 });
 
 module.exports =
 	mongoose.models.DoctorProfile ||
