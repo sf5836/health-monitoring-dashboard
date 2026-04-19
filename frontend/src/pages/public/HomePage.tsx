@@ -1,11 +1,11 @@
 
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { publicBlogs, publicDoctors } from '../../data/publicContent';
 import { ApiError } from '../../services/apiClient';
 import {
   getPublicBlogs,
   getPublicDoctors,
+<<<<<<< HEAD
 <<<<<<< HEAD
   getPublicTestimonials,
   subscribeNewsletter,
@@ -23,38 +23,15 @@ const stats = [
 ];
 
 =======
+=======
+  getPublicTestimonials,
+>>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
   subscribeNewsletter,
   type PublicBlogCard,
-  type PublicDoctorCard
+  type PublicDoctorCard,
+  type PublicTestimonialCard
 } from '../../services/publicContentService';
 import { ROUTE_PATHS } from '../../routes/routePaths';
-
-type Testimonial = {
-  name: string;
-  quote: string;
-  role: string;
-};
-
-const testimonials: Testimonial[] = [
-  {
-    name: 'Farah Ahmed',
-    role: 'Hypertension Patient',
-    quote:
-      'HealthMonitor Pro helped me detect trends I never noticed before. My doctor adjusted my plan quickly, and I feel more in control every day.'
-  },
-  {
-    name: 'Bilal Hussain',
-    role: 'Diabetes Patient',
-    quote:
-      'Logging vitals takes minutes, but the insights are huge. The doctor chat and reports made my follow-ups smoother and much more focused.'
-  },
-  {
-    name: 'Nadia Raza',
-    role: 'Cardiac Recovery Patient',
-    quote:
-      'The reminders, dashboards, and secure consultation flow gave me confidence after surgery. It feels like care that is always with me.'
-  }
-];
 
 const stats = [
   { value: '10,000+', label: 'Patients' },
@@ -125,10 +102,14 @@ function StepArt({ kind }: Readonly<{ kind: 'account' | 'vitals' | 'care' }>) {
 export default function HomePage() {
   const [headerScrolled, setHeaderScrolled] = useState(false);
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
   const [featuredDoctors, setFeaturedDoctors] = useState<PublicDoctorCard[]>([]);
   const [featuredBlogs, setFeaturedBlogs] = useState<PublicBlogCard[]>([]);
   const [testimonials, setTestimonials] = useState<PublicTestimonialCard[]>([]);
   const [liveDataError, setLiveDataError] = useState('');
+<<<<<<< HEAD
 =======
   const [featuredDoctors, setFeaturedDoctors] = useState<PublicDoctorCard[]>(
     publicDoctors.slice(0, 6).map((doctor, index) => ({
@@ -151,6 +132,8 @@ export default function HomePage() {
     }))
   );
 >>>>>>> bbd6be8eb45b80dd474a49dd2221607eea17692f
+=======
+>>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
   const [email, setEmail] = useState('');
   const [subscribeMessage, setSubscribeMessage] = useState('');
   const [subscribeError, setSubscribeError] = useState('');
@@ -173,11 +156,15 @@ export default function HomePage() {
     async function loadPublicData() {
       try {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
         const [doctors, blogs, backendTestimonials] = await Promise.all([
           getPublicDoctors(6),
           getPublicBlogs(6),
           getPublicTestimonials(12)
         ]);
+<<<<<<< HEAD
         if (!cancelled) {
           setFeaturedDoctors(doctors);
           setFeaturedBlogs(blogs);
@@ -193,17 +180,26 @@ export default function HomePage() {
         }
 =======
         const [doctors, blogs] = await Promise.all([getPublicDoctors(6), getPublicBlogs(6)]);
+=======
+>>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
         if (!cancelled) {
-          if (doctors.length > 0) {
-            setFeaturedDoctors(doctors);
-          }
-          if (blogs.length > 0) {
-            setFeaturedBlogs(blogs);
-          }
+          setFeaturedDoctors(doctors);
+          setFeaturedBlogs(blogs);
+          setTestimonials(backendTestimonials);
+          setLiveDataError('');
         }
       } catch {
+<<<<<<< HEAD
         // Keep fallback seed content when API fetch fails.
 >>>>>>> bbd6be8eb45b80dd474a49dd2221607eea17692f
+=======
+        if (!cancelled) {
+          setFeaturedDoctors([]);
+          setFeaturedBlogs([]);
+          setTestimonials([]);
+          setLiveDataError('Unable to load live backend data right now.');
+        }
+>>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
       }
     }
 
@@ -276,14 +272,20 @@ export default function HomePage() {
 
       <main>
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
         {liveDataError ? (
           <section className="section-shell" style={{ paddingTop: '1rem' }}>
             <p className="hm-subscribe-error">{liveDataError}</p>
           </section>
         ) : null}
 
+<<<<<<< HEAD
 =======
 >>>>>>> bbd6be8eb45b80dd474a49dd2221607eea17692f
+=======
+>>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
         <section className="hm-hero section-shell">
           <div className="hm-hero-grid">
             <div className="hm-hero-copy">
@@ -392,6 +394,9 @@ export default function HomePage() {
           </div>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
           {featuredDoctors.length === 0 ? (
             <p className="hm-subtext" style={{ textAlign: 'center', marginTop: '1rem' }}>
               No doctors available yet.
@@ -504,14 +509,20 @@ export default function HomePage() {
           </div>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
           {featuredBlogs.length === 0 ? (
             <p className="hm-subtext" style={{ textAlign: 'center', marginTop: '1rem' }}>
               No blog articles available yet.
             </p>
           ) : null}
 
+<<<<<<< HEAD
 =======
 >>>>>>> bbd6be8eb45b80dd474a49dd2221607eea17692f
+=======
+>>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
           <div className="hm-section-action">
             <Link to={ROUTE_PATHS.public.blogs} className="hm-btn hm-btn-outline hm-btn-lg">
               View All Articles
@@ -526,6 +537,9 @@ export default function HomePage() {
             </div>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
             {testimonials.length > 0 ? (
               <div
                 className="hm-testimonials-carousel"
@@ -561,6 +575,7 @@ export default function HomePage() {
                         <StarRow />
                         <p className="hm-quote">{testimonial.quote}</p>
                       </article>
+<<<<<<< HEAD
                     </div>
                   ))}
 
@@ -651,13 +666,36 @@ export default function HomePage() {
                     <div>
                       <h3>{testimonial.name}</h3>
                       <p>{testimonial.role}</p>
+=======
+>>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
                     </div>
-                  </div>
-                  <StarRow />
-                  <p className="hm-quote">{testimonial.quote}</p>
-                </article>
-              ))}
-            </div>
+                  ))}
+
+                  {testimonials.map((testimonial) => (
+                    <div key={`duplicate-${testimonial.id}`} className="hm-testimonial-item" aria-hidden="true">
+                      <article className="hm-card hm-testimonial-card">
+                        <span className="hm-quote-mark" aria-hidden="true">
+                          &quot;
+                        </span>
+                        <div className="hm-testimonial-header">
+                          <div className="hm-avatar" aria-hidden="true" />
+                          <div>
+                            <h3>{testimonial.name}</h3>
+                            <p>{testimonial.role}</p>
+                          </div>
+                        </div>
+                        <StarRow />
+                        <p className="hm-quote">{testimonial.quote}</p>
+                      </article>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="hm-subtext" style={{ textAlign: 'center', marginTop: '1rem' }}>
+                No patient reviews available yet.
+              </p>
+            )}
           </div>
         </section>
       </main>

@@ -1,8 +1,12 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&family=Sora:wght@400;500;600;700;800&display=swap');
 =======
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@400;500;600;700;800&display=swap');
 >>>>>>> bbd6be8eb45b80dd474a49dd2221607eea17692f
+=======
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&family=Sora:wght@400;500;600;700;800&display=swap');
+>>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
 
 :root {
   --hm-bg: #f9fafb;
@@ -1323,9 +1327,416 @@ ul {
   border: 0;
 }
 
+/* ========================================
+   HERO SECTION ANIMATIONS
+   ======================================== */
+
+@keyframes floatUp {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-16px);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: var(--hm-shadow-md), 0 0 0 0 rgba(45, 196, 141, 0.35);
+  }
+  50% {
+    box-shadow: var(--hm-shadow-md), 0 0 0 8px rgba(45, 196, 141, 0);
+  }
+}
+
+.hm-dashboard-mockup {
+  animation: floatUp 4.5s ease-in-out infinite, pulseGlow 3s ease-in-out 0.5s infinite;
+}
+
+/* ========================================
+   HOW IT WORKS SECTION ANIMATIONS
+   ======================================== */
+
+@keyframes slideInDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes vectorRevealUp {
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes orbitRect {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(4px, -3px);
+  }
+  50% {
+    transform: translate(0, -6px);
+  }
+  75% {
+    transform: translate(-4px, -3px);
+  }
+}
+
+@keyframes orbitCircle {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(2px, -2px);
+  }
+  50% {
+    transform: translate(0, -4px);
+  }
+  75% {
+    transform: translate(-2px, -2px);
+  }
+}
+
+@keyframes strokeFlow {
+  0% {
+    stroke-dashoffset: 84;
+  }
+  50% {
+    stroke-dashoffset: 20;
+  }
+  100% {
+    stroke-dashoffset: -44;
+  }
+}
+
+@keyframes drawStroke {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fillPulse {
+  0%, 100% {
+    opacity: 0.6;
+    fill: #d8f5e8;
+  }
+  50% {
+    opacity: 1;
+    fill: #c3ede0;
+  }
+}
+
+@keyframes drawStrokeLoop {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  100% {
+    stroke-dashoffset: -100;
+  }
+}
+
+.hm-step-card {
+  opacity: 1;
+}
+
+.hm-step-card:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.hm-step-card:nth-child(2) {
+  animation-delay: 0s;
+}
+
+.hm-step-card:nth-child(3) {
+  animation-delay: 0s;
+}
+
+.hm-step-image-wrap {
+  animation: vectorRevealUp 0.7s ease-out both;
+}
+
+.hm-step-card:nth-child(1) .hm-step-image-wrap {
+  animation-delay: 0.06s;
+}
+
+.hm-step-card:nth-child(2) .hm-step-image-wrap {
+  animation-delay: 0.2s;
+}
+
+.hm-step-card:nth-child(3) .hm-step-image-wrap {
+  animation-delay: 0.34s;
+}
+
+.hm-step-art {
+  animation: scaleIn 0.8s ease-out;
+}
+
+.hm-step-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: orbitCircle 2.8s ease-in-out infinite;
+}
+
+.hm-step-dot:nth-of-type(2) {
+  animation-delay: 0.18s;
+}
+
+.hm-step-dot:nth-of-type(3) {
+  animation-delay: 0.36s;
+}
+
+.hm-step-fill {
+  animation: fillPulse 2.5s ease-in-out infinite;
+}
+
+.hm-step-light {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: vectorRevealUp 0.65s ease-out both, orbitRect 3.8s ease-in-out infinite 0.75s;
+}
+
+.hm-step-card:nth-child(2) .hm-step-fill {
+  animation-delay: 0.3s;
+}
+
+.hm-step-card:nth-child(3) .hm-step-fill {
+  animation-delay: 0.6s;
+}
+
+.hm-step-stroke {
+  stroke-dasharray: 84;
+  animation: strokeFlow 2.8s linear infinite;
+}
+
+.hm-step-accent-stroke {
+  stroke-dasharray: 100;
+  animation: drawStrokeLoop 3s linear infinite;
+}
+
+.hm-step-card:nth-child(2) .hm-step-accent-stroke {
+  animation-duration: 2.6s;
+}
+
+.hm-step-card:nth-child(3) .hm-step-accent-stroke {
+  animation-duration: 2.9s;
+}
+
+/* ========================================
+   TESTIMONIALS CAROUSEL ANIMATION
+   ======================================== */
+
+@keyframes scrollTestimonials {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.hm-testimonials-container {
+  display: flex;
+  animation: scrollTestimonials 35s linear infinite;
+  gap: 1.2rem;
+}
+
+.hm-testimonials-container.paused {
+  animation-play-state: paused;
+}
+
+.hm-testimonial-item {
+  flex: 0 0 calc(33.333% - 0.8rem);
+  min-width: 320px;
+}
+
+/* Stagger animation for individual testimonial cards */
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hm-testimonial-card {
+  animation: fadeInUp 0.7s ease-out;
+}
+
+/* ========================================
+   DASHBOARD MOCKUP INNER ANIMATIONS
+   ======================================== */
+
+@keyframes shimmer {
+  0%, 100% {
+    background-position: -200% 0;
+  }
+  50% {
+    background-position: 200% 0;
+  }
+}
+
+.hm-metric-card,
+.hm-chart-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hm-mockup-content:hover .hm-metric-card,
+.hm-mockup-content:hover .hm-chart-card {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(13, 92, 69, 0.12);
+}
+
+.hm-trend-point {
+  animation: pulsePoint 2s ease-in-out infinite;
+}
+
+@keyframes pulsePoint {
+  0%, 100% {
+    r: 4px;
+    opacity: 1;
+  }
+  50% {
+    r: 6px;
+    opacity: 0.7;
+  }
+}
+
+.hm-up-trend {
+  animation: slideUp 0.6s ease-out;
+}
+
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .hm-listing-head {
   padding-bottom: 1.1rem;
   text-align: center;
+}
+
+.hm-listing-head h1 {
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  margin-bottom: 0.6rem;
+}
+
+.hm-listing-head .hm-subtext {
+  margin: 0 auto 1.2rem;
+  max-width: 60ch;
+}
+
+.hm-listing-section {
+  padding-top: 0.6rem;
+}
+
+/* ========================================
+   TESTIMONIALS CAROUSEL CONTAINER
+   ======================================== */
+
+.hm-testimonials-carousel {
+  margin-top: 2.1rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.hm-testimonials-carousel::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 60px;
+  background: linear-gradient(90deg, var(--hm-testimonial-bg), transparent);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.hm-testimonials-carousel::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 60px;
+  background: linear-gradient(270deg, var(--hm-testimonial-bg), transparent);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.hm-testimonials-container {
+  display: flex;
+  gap: 1.2rem;
+  animation: scrollTestimonials 45s linear infinite;
+  will-change: transform;
+}
+
+.hm-testimonials-container.paused {
+  animation-play-state: paused;
+}
+
+.hm-testimonial-item {
+  flex: 0 0 calc(33.333% - 0.8rem);
+  min-width: 320px;
+}
+
+@media (max-width: 1090px) {
+  .hm-testimonial-item {
+    flex: 0 0 calc(50% - 0.6rem);
+    min-width: 280px;
+  }
+}
+
+@media (max-width: 760px) {
+  .hm-testimonial-item {
+    flex: 0 0 100%;
+    min-width: 100%;
+  }
+
+  .hm-testimonials-carousel::before,
+  .hm-testimonials-carousel::after {
+    width: 0;
+  }
+
+  .hm-testimonials-container {
+    animation: none;
+  }
 }
 
 .hm-listing-head h1 {
@@ -2423,4 +2834,837 @@ ul {
 .button-secondary {
   border: 1px solid #d1d5db;
   color: #374151;
+}
+
+/* Doctors listing page */
+.hm-doctors-page {
+  min-height: 100vh;
+}
+
+.hm-doctors-title-area {
+  padding-block: 2.1rem 1.5rem;
+}
+
+.hm-doctors-title-area h1 {
+  font-size: clamp(1.8rem, 3vw, 2.1rem);
+}
+
+.hm-breadcrumb {
+  font-size: 0.9rem;
+  color: var(--hm-text-secondary);
+  margin-bottom: 0.6rem;
+}
+
+.hm-breadcrumb a {
+  color: var(--hm-primary);
+  font-weight: 600;
+}
+
+.hm-doctors-searchbar {
+  margin-top: 1.1rem;
+  border: 1px solid #d9e2df;
+  background: #ffffff;
+  border-radius: 12px;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  padding: 0 0.9rem;
+  box-shadow: var(--hm-shadow-sm);
+}
+
+.hm-doctors-searchbar svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--hm-secondary);
+  fill: none;
+  stroke-width: 2;
+}
+
+.hm-doctors-searchbar input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  font-size: 0.98rem;
+  font-family: 'DM Sans', sans-serif;
+  padding-left: 0.5rem;
+  background: transparent;
+}
+
+.hm-doctors-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 1.3rem;
+  align-items: start;
+  padding-bottom: 3.2rem;
+}
+
+.hm-filter-sidebar {
+  position: sticky;
+  top: 102px;
+  background: #ffffff;
+  border: 1px solid #e3ece8;
+  border-radius: 14px;
+  box-shadow: var(--hm-shadow-sm);
+  padding: 1rem;
+}
+
+.hm-filter-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.7rem;
+}
+
+.hm-filter-head h2 {
+  font-size: 1.12rem;
+}
+
+.hm-clear-link {
+  border: 0;
+  background: transparent;
+  color: var(--hm-secondary);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hm-filter-group {
+  border-top: 1px solid #edf3f0;
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.hm-filter-group h3 {
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.hm-filter-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.hm-checkbox-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.94rem;
+  color: var(--hm-text-secondary);
+}
+
+.hm-rating-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.hm-rating-picker button {
+  border: 1px solid #d1e7dd;
+  background: #f8fcfa;
+  color: var(--hm-primary);
+  border-radius: 999px;
+  padding: 0.35rem 0.52rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hm-rating-picker button.active {
+  background: var(--hm-secondary);
+  border-color: var(--hm-secondary);
+  color: #ffffff;
+}
+
+.hm-range-caption {
+  margin-top: 0.45rem;
+  font-size: 0.84rem;
+  color: var(--hm-text-secondary);
+}
+
+.hm-day-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.hm-day-pills button {
+  border: 1px solid #d8ebe4;
+  background: #f8fcfa;
+  color: var(--hm-primary);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.3rem 0.55rem;
+  cursor: pointer;
+}
+
+.hm-day-pills button.active {
+  background: var(--hm-secondary);
+  border-color: var(--hm-secondary);
+  color: #ffffff;
+}
+
+.hm-apply-btn {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.hm-results-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.hm-results-topbar p {
+  font-weight: 700;
+  color: #2a3f37;
+}
+
+.hm-results-topbar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--hm-text-secondary);
+  font-size: 0.9rem;
+}
+
+.hm-results-topbar select {
+  border: 1px solid #d8e4e0;
+  border-radius: 8px;
+  padding: 0.42rem 0.6rem;
+  background: #ffffff;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.hm-doctor-results-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.hm-doctor-result-card {
+  display: flex;
+  gap: 0.9rem;
+  background: #ffffff;
+  border: 1px solid #e1ece8;
+  border-radius: 14px;
+  box-shadow: var(--hm-shadow-sm);
+  padding: 1rem;
+}
+
+.hm-result-avatar-wrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.hm-result-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #d8f5e8, #bfead9);
+}
+
+.hm-online-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  position: absolute;
+  right: 2px;
+  bottom: 5px;
+  background: #22c55e;
+  border: 2px solid #ffffff;
+}
+
+.hm-result-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.hm-result-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.hm-result-top h3 {
+  font-size: 1rem;
+}
+
+.hm-result-hospital,
+.hm-result-exp {
+  color: var(--hm-text-secondary);
+  font-size: 0.9rem;
+  margin-top: 0.3rem;
+}
+
+.hm-result-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.45rem;
+  color: var(--hm-text-secondary);
+  font-size: 0.85rem;
+}
+
+.hm-star-row {
+  display: inline-flex;
+  gap: 0.18rem;
+}
+
+.hm-star {
+  width: 15px;
+  height: 15px;
+  fill: #e2e8f0;
+}
+
+.hm-star.filled {
+  fill: #f6c54f;
+}
+
+.hm-result-fee {
+  margin-top: 0.5rem;
+  font-weight: 700;
+  color: #174636;
+}
+
+.hm-result-actions {
+  margin-top: 0.7rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.hm-card-btn {
+  min-height: 38px;
+  padding-inline: 0.8rem;
+  font-size: 0.85rem;
+}
+
+.hm-empty-state {
+  border: 1px dashed #b8ddd0;
+  border-radius: 14px;
+  background: #f4fbf8;
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.hm-empty-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 0.6rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #d8f5e8;
+}
+
+.hm-empty-icon svg {
+  width: 44px;
+  height: 44px;
+  stroke: var(--hm-primary);
+  fill: none;
+  stroke-width: 2.4;
+}
+
+.hm-pagination {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.hm-pagination button,
+.hm-pagination .ellipsis {
+  min-width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  border: 1px solid #d7e5df;
+  background: #ffffff;
+  color: #27453a;
+  font-weight: 700;
+}
+
+.hm-pagination .ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+}
+
+.hm-pagination button.active {
+  background: var(--hm-primary);
+  border-color: var(--hm-primary);
+  color: #ffffff;
+}
+
+.hm-pagination button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Doctor detail page */
+.hm-doctor-detail-wrap {
+  padding-block: 1.8rem 3rem;
+}
+
+.hm-back-link {
+  display: inline-flex;
+  margin-bottom: 0.8rem;
+  color: var(--hm-primary);
+  font-weight: 700;
+}
+
+.hm-doctor-error {
+  margin: 0 0 0.9rem;
+  color: #b42318;
+  font-weight: 700;
+}
+
+.hm-doctor-hero-card {
+  background: #ffffff;
+  border: 1px solid #e2ebe8;
+  border-radius: 16px;
+  box-shadow: var(--hm-shadow-sm);
+  overflow: hidden;
+}
+
+.hm-doctor-hero-top {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1.3rem;
+}
+
+.hm-doctor-photo-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+}
+
+.hm-doctor-photo {
+  width: 120px;
+  height: 120px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 20%, #d8f5e8, #7ecfb0 48%, #0d5c45 100%);
+  border: 3px solid #ffffff;
+  box-shadow: 0 10px 24px rgba(13, 92, 69, 0.2);
+}
+
+.hm-verified-badge {
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+  padding: 0.28rem 0.68rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.hm-doctor-hero-main h1 {
+  font-size: clamp(1.65rem, 2.3vw, 1.9rem);
+}
+
+.hm-doctor-hospital {
+  margin-top: 0.6rem;
+  color: var(--hm-text-secondary);
+}
+
+.hm-doctor-stats-row {
+  margin-top: 0.7rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  color: #1d4235;
+  font-weight: 600;
+}
+
+.hm-doctor-stats-row span {
+  position: relative;
+}
+
+.hm-doctor-stats-row span + span::before {
+  content: '•';
+  color: #8aa59a;
+  position: absolute;
+  left: -0.58rem;
+}
+
+.hm-doctor-availability-badge {
+  margin-top: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  background: #ecfdf3;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  padding: 0.34rem 0.72rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.hm-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #22c55e;
+}
+
+.hm-doctor-hero-actions {
+  margin-top: 0.95rem;
+}
+
+.hm-doctor-tag-strip {
+  border-top: 1px solid #edf4f1;
+  padding: 0.9rem 1.3rem 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.hm-doctor-tag {
+  border-radius: 999px;
+  background: #e8f9f2;
+  color: #0d5c45;
+  border: 1px solid #cfeee1;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.28rem 0.62rem;
+}
+
+.hm-doctor-tabs {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  border-bottom: 1px solid #e6efeb;
+  padding-bottom: 0.5rem;
+}
+
+.hm-doctor-tabs button {
+  border: 0;
+  background: transparent;
+  color: #496257;
+  border-radius: 999px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  padding: 0.38rem 0.8rem;
+  cursor: pointer;
+}
+
+.hm-doctor-tabs button.active {
+  color: #ffffff;
+  background: var(--hm-primary);
+}
+
+.hm-doctor-main-grid {
+  margin-top: 1.1rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.hm-doctor-main-col {
+  display: grid;
+  gap: 1rem;
+}
+
+.hm-doctor-panel {
+  background: #ffffff;
+  border: 1px solid #e2ebe8;
+  border-radius: 14px;
+  box-shadow: var(--hm-shadow-sm);
+  padding: 1rem;
+}
+
+.hm-doctor-panel h2 {
+  font-size: 1.3rem;
+}
+
+.hm-doctor-panel p {
+  margin-top: 0.55rem;
+  color: var(--hm-text-secondary);
+  line-height: 1.65;
+}
+
+.hm-doctor-panel h3 {
+  margin-top: 0.9rem;
+  font-size: 0.98rem;
+}
+
+.hm-inline-badges,
+.hm-expertise-grid {
+  margin-top: 0.55rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.hm-inline-badges span,
+.hm-expertise-grid span {
+  border-radius: 999px;
+  border: 1px solid #d2ece0;
+  background: #f2fbf7;
+  color: #0d5c45;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.28rem 0.65rem;
+}
+
+.hm-expertise-grid span:nth-child(odd) {
+  background: #e8f9f2;
+}
+
+.hm-qualification-timeline {
+  margin-top: 0.65rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.hm-qualification-timeline li {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: start;
+}
+
+.hm-qualification-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--hm-secondary);
+  margin-top: 0.36rem;
+  box-shadow: 0 0 0 4px rgba(26, 158, 114, 0.2);
+}
+
+.hm-qualification-timeline li div h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.hm-qualification-timeline li div p {
+  margin: 0.18rem 0 0;
+}
+
+.hm-qualification-timeline li strong {
+  font-family: 'JetBrains Mono', monospace;
+  color: #1a4f3d;
+  font-size: 0.86rem;
+}
+
+.hm-review-overview {
+  margin-top: 0.55rem;
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: start;
+}
+
+.hm-review-score {
+  border-radius: 12px;
+  background: #f2fbf7;
+  border: 1px solid #d5ede3;
+  padding: 0.75rem;
+}
+
+.hm-review-score strong {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2rem;
+  color: #0d5c45;
+}
+
+.hm-review-score p {
+  margin-top: 0.2rem;
+  font-size: 0.86rem;
+}
+
+.hm-review-bars {
+  display: grid;
+  gap: 0.38rem;
+}
+
+.hm-review-bar-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 32px;
+  gap: 0.48rem;
+  align-items: center;
+  font-size: 0.84rem;
+  color: #27453a;
+}
+
+.hm-review-bar-row div {
+  height: 8px;
+  border-radius: 999px;
+  background: #e8f0ed;
+  overflow: hidden;
+}
+
+.hm-review-bar-row i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2dc48d, #1a9e72);
+}
+
+.hm-review-card-list {
+  margin-top: 0.8rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.hm-review-card {
+  border: 1px solid #e7eeeb;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 0.8rem;
+}
+
+.hm-review-head {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.hm-review-head .hm-avatar {
+  width: 42px;
+  height: 42px;
+}
+
+.hm-review-head h4 {
+  margin: 0;
+  font-size: 0.96rem;
+}
+
+.hm-review-head p {
+  margin: 0.1rem 0 0;
+  font-size: 0.8rem;
+}
+
+.hm-review-stars {
+  margin-left: auto;
+  color: #f59e0b;
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+}
+
+.hm-review-card p {
+  margin: 0.55rem 0 0;
+}
+
+.hm-doctor-side-col {
+  position: sticky;
+  top: 98px;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.hm-doctor-side-card {
+  background: #ffffff;
+  border: 1px solid #e2ebe8;
+  border-radius: 14px;
+  box-shadow: var(--hm-shadow-sm);
+  padding: 0.95rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.hm-doctor-side-card h3 {
+  font-size: 1rem;
+}
+
+.hm-doctor-side-card p {
+  margin: 0;
+  color: var(--hm-text-secondary);
+  line-height: 1.52;
+}
+
+.hm-doctor-side-card-accent {
+  background: linear-gradient(160deg, #e9fbf4, #d5f5e8);
+  border-color: #bfebd9;
+}
+
+.hm-consult-type {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.hm-consult-type label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: #215043;
+}
+
+.hm-doctor-side-card input[type='date'] {
+  min-height: 40px;
+  border: 1px solid #cce8dd;
+  border-radius: 10px;
+  background: #ffffff;
+  font-family: 'DM Sans', sans-serif;
+  color: #1b4335;
+  padding: 0 0.6rem;
+}
+
+@media (max-width: 1090px) {
+  .hm-doctors-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .hm-filter-sidebar {
+    position: static;
+  }
+
+  .hm-doctor-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hm-doctor-side-col {
+    position: static;
+  }
+}
+
+@media (max-width: 760px) {
+  .hm-doctor-results-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hm-doctor-result-card,
+  .hm-doctor-hero-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hm-doctor-hero-top {
+    display: flex;
+  }
+
+  .hm-doctor-photo-col {
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  .hm-doctor-stats-row span + span::before {
+    content: '';
+  }
+
+  .hm-review-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .hm-result-actions {
+    width: 100%;
+  }
+
+  .hm-result-actions .hm-card-btn {
+    flex: 1;
+  }
 }
