@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+<<<<<<< HEAD
 import AdminLoginPage from '../pages/admin/AdminLoginPage';
 import PatientAppointmentsPage from '../pages/patient/PatientAppointmentsPage';
 import PatientDashboardPage from '../pages/patient/PatientDashboardPage';
@@ -15,6 +16,11 @@ import DoctorDetailPage from '../pages/public/DoctorDetailPage';
 import DoctorsPage from '../pages/public/DoctorsPage';
 import HomePage from '../pages/public/HomePage';
 import LoginPage from '../pages/public/LoginPage';
+=======
+import BlogsPage from '../pages/public/BlogsPage';
+import DoctorsPage from '../pages/public/DoctorsPage';
+import HomePage from '../pages/public/HomePage';
+>>>>>>> bbd6be8eb45b80dd474a49dd2221607eea17692f
 import RegisterPage from '../pages/public/RegisterPage';
 import { ROUTE_PATHS } from './routePaths';
 
@@ -45,6 +51,7 @@ export function AppRouter() {
     <Routes>
       <Route path={ROUTE_PATHS.public.home} element={<HomePage />} />
       <Route path={ROUTE_PATHS.public.doctors} element={<DoctorsPage />} />
+<<<<<<< HEAD
       <Route path={ROUTE_PATHS.public.doctorDetail} element={<DoctorDetailPage />} />
       <Route path={ROUTE_PATHS.public.blogs} element={<BlogsPage />} />
       <Route path={ROUTE_PATHS.auth.login} element={<LoginPage />} />
@@ -75,6 +82,10 @@ export function AppRouter() {
         path={ROUTE_PATHS.admin.dashboard}
         element={<PlaceholderPage title="Admin Dashboard" />}
       />
+=======
+      <Route path={ROUTE_PATHS.public.blogs} element={<BlogsPage />} />
+      <Route path={ROUTE_PATHS.auth.register} element={<RegisterPage />} />
+>>>>>>> bbd6be8eb45b80dd474a49dd2221607eea17692f
       <Route path="/home" element={<Navigate to={ROUTE_PATHS.public.home} replace />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
