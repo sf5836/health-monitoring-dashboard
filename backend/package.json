@@ -8,6 +8,7 @@
     "start": "node src/server.js",
     "db:init": "echo \"No db init script configured\"",
     "db:seed": "echo \"No db seed script configured\"",
+    "db:seed:admin": "node src/scripts/seedAdmin.js",
     "test": "echo \"No tests configured\"",
     "test:unit": "echo \"No unit tests configured\"",
     "test:integration": "echo \"No integration tests configured\"",

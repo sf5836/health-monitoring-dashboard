@@ -29,12 +29,111 @@ async function ensureConnectedPatient(doctorId, patientId) {
   return profile;
 }
 
-async function getPublicDoctors(_req, res, next) {
+function parseSpecializations(queryValue) {
+  if (!queryValue) return [];
+  if (Array.isArray(queryValue)) {
+    return queryValue
+      .flatMap((value) => String(value).split(','))
+      .map((value) => value.trim())
+      .filter(Boolean);
+  }
+
+  return String(queryValue)
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function getDayRegex(day) {
+  const normalized = String(day || '').trim().toLowerCase();
+  if (!normalized) return null;
+  const aliases = {
+    mon: 'mon(?:day)?',
+    tue: 'tue(?:sday)?',
+    wed: 'wed(?:nesday)?',
+    thu: 'thu(?:rsday)?',
+    fri: 'fri(?:day)?',
+    sat: 'sat(?:urday)?',
+    sun: 'sun(?:day)?'
+  };
+
+  const short = normalized.slice(0, 3);
+  if (!aliases[short]) return null;
+  return new RegExp(aliases[short], 'i');
+}
+
+async function getPublicDoctors(req, res, next) {
   try {
-    const doctors = await DoctorProfile.find({ approvalStatus: 'approved' })
+    const limit = Math.min(Math.max(Number(req.query.limit || 12), 1), 60);
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const skip = (page - 1) * limit;
+
+    const search = String(req.query.search || '').trim();
+    const specializations = parseSpecializations(req.query.specializations);
+    const minFee = req.query.minFee !== undefined ? Number(req.query.minFee) : null;
+    const maxFee = req.query.maxFee !== undefined ? Number(req.query.maxFee) : null;
+    const minRating = req.query.minRating !== undefined ? Number(req.query.minRating) : null;
+    const availabilityDay = req.query.availabilityDay;
+    const sort = String(req.query.sort || 'latest');
+
+    const filter = { approvalStatus: 'approved' };
+
+    if (specializations.length > 0) {
+      filter.specialization = { $in: specializations };
+    }
+
+    const hasMinFee = minFee !== null && !Number.isNaN(minFee);
+    const hasMaxFee = maxFee !== null && !Number.isNaN(maxFee);
+
+    if (hasMinFee || hasMaxFee) {
+      filter.fee = {};
+      if (hasMinFee) filter.fee.$gte = minFee;
+      if (hasMaxFee) filter.fee.$lte = maxFee;
+    }
+
+    if (!Number.isNaN(minRating) && minRating !== null) {
+      filter.rating = { $gte: minRating };
+    }
+
+    const dayRegex = getDayRegex(availabilityDay);
+    if (dayRegex) {
+      filter.availability = { $regex: dayRegex };
+    }
+
+    const sortMap = {
+      latest: { updatedAt: -1 },
+      rating: { rating: -1, reviewsCount: -1, updatedAt: -1 },
+      experience: { experienceYears: -1, updatedAt: -1 },
+      fee_asc: { fee: 1, updatedAt: -1 },
+      fee_desc: { fee: -1, updatedAt: -1 }
+    };
+
+    const selectedSort = sortMap[sort] || sortMap.latest;
+
+    const baseQuery = DoctorProfile.find(filter).populate('userId', 'fullName').lean();
+
+    if (search) {
+      const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const matchedUsers = await User.find({ fullName: { $regex: regex } }).select('_id').lean();
+      const matchedUserIds = matchedUsers.map((item) => item._id);
+
+      baseQuery.or([
+        { specialization: { $regex: regex } },
+        { hospital: { $regex: regex } },
+        { userId: { $in: matchedUserIds } }
+      ]);
+    }
+
+    const total = await DoctorProfile.countDocuments(baseQuery.getFilter());
+
+    const doctors = await DoctorProfile.find(baseQuery.getFilter())
       .populate('userId', 'fullName')
-      .sort({ updatedAt: -1 })
+      .sort(selectedSort)
+      .skip(skip)
+      .limit(limit)
       .lean();
+
+    const allSpecializations = await DoctorProfile.distinct('specialization', { approvalStatus: 'approved' });
 
     const safeDoctors = doctors.map((profile) => ({
       _id: profile._id,
@@ -44,6 +143,8 @@ async function getPublicDoctors(_req, res, next) {
       experienceYears: profile.experienceYears,
       hospital: profile.hospital,
       fee: profile.fee,
+      rating: profile.rating ?? 5,
+      reviewsCount: profile.reviewsCount ?? 0,
       bio: profile.bio,
       availability: profile.availability,
       approvalStatus: profile.approvalStatus,
@@ -51,7 +152,21 @@ async function getPublicDoctors(_req, res, next) {
       updatedAt: profile.updatedAt
     }));
 
-    res.json({ success: true, data: { doctors: safeDoctors } });
+    res.json({
+      success: true,
+      data: {
+        doctors: safeDoctors,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.max(Math.ceil(total / limit), 1)
+        },
+        filters: {
+          specializations: allSpecializations.filter(Boolean).sort((a, b) => String(a).localeCompare(String(b)))
+        }
+      }
+    });
   } catch (error) {
     next(error);
   }
@@ -89,12 +204,82 @@ async function getPublicDoctorById(req, res, next) {
           experienceYears: profile.experienceYears,
           hospital: profile.hospital,
           fee: profile.fee,
+          rating: profile.rating ?? 5,
+          reviewsCount: profile.reviewsCount ?? 0,
           bio: profile.bio,
           availability: profile.availability,
           approvalStatus: profile.approvalStatus,
           createdAt: profile.createdAt,
           updatedAt: profile.updatedAt
         }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getPublicTestimonials(req, res, next) {
+  try {
+    const limit = Math.min(Math.max(Number(req.query.limit || 12), 1), 50);
+
+    const testimonials = await Appointment.find({
+      status: 'completed',
+      notes: { $exists: true, $ne: '' }
+    })
+      .sort({ updatedAt: -1 })
+      .limit(limit)
+      .populate('patientId', 'fullName')
+      .populate('doctorId', 'fullName')
+      .lean();
+
+    const safeTestimonials = testimonials
+      .map((item) => ({
+        id: item._id,
+        name: item.patientId?.fullName || 'Patient',
+        role: item.doctorId?.fullName ? `Patient of ${item.doctorId.fullName}` : 'Patient',
+        quote: String(item.notes || '').trim()
+      }))
+      .filter((item) => item.quote.length > 0);
+
+    res.json({ success: true, data: { testimonials: safeTestimonials } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getPublicDoctorReviews(req, res, next) {
+  try {
+    const { doctorId } = req.params;
+    const limit = Math.min(Math.max(Number(req.query.limit || 10), 1), 30);
+
+    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
+      throw badRequest('Invalid doctorId');
+    }
+
+    const reviews = await Appointment.find({
+      doctorId,
+      status: 'completed',
+      notes: { $exists: true, $ne: '' }
+    })
+      .sort({ updatedAt: -1 })
+      .limit(limit)
+      .populate('patientId', 'fullName')
+      .lean();
+
+    const safeReviews = reviews
+      .map((item, index) => ({
+        id: item._id,
+        name: item.patientId?.fullName || `Patient ${index + 1}`,
+        date: item.updatedAt || item.createdAt,
+        quote: String(item.notes || '').trim()
+      }))
+      .filter((item) => item.quote.length > 0);
+
+    res.json({
+      success: true,
+      data: {
+        reviews: safeReviews
       }
     });
   } catch (error) {
@@ -571,6 +756,8 @@ async function submitMyBlog(req, res, next) {
 module.exports = {
   getPublicDoctors,
   getPublicDoctorById,
+  getPublicTestimonials,
+  getPublicDoctorReviews,
   getMyDashboard,
   getMyPatients,
   getMyPatientDetail,

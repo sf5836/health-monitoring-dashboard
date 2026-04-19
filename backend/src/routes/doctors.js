@@ -22,6 +22,12 @@ const { trendsQuerySchema } = require('../schemas/vitalSchemas');
 const router = express.Router();
 
 router.get('/', doctorController.getPublicDoctors);
+router.get('/reviews/public', doctorController.getPublicTestimonials);
+router.get(
+	'/:doctorId/reviews/public',
+	validate({ params: doctorIdParamsSchema }),
+	doctorController.getPublicDoctorReviews
+);
 router.get(
 	'/:doctorId/public',
 	validate({ params: doctorIdParamsSchema }),

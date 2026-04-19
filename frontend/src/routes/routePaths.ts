@@ -19,6 +19,7 @@ export const ROUTE_PATHS = {
     appointments: '/patient/appointments',
     prescriptions: '/patient/prescriptions',
     messages: '/patient/messages',
+    notifications: '/patient/notifications',
     profile: '/patient/profile'
   },
   doctor: {

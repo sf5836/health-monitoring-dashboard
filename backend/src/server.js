@@ -17,6 +17,7 @@ const adminRoutes = require('./routes/admin');
 const chatRoutes = require('./routes/chat');
 const appointmentRoutes = require('./routes/appointments');
 const prescriptionRoutes = require('./routes/prescriptions');
+const notificationRoutes = require('./routes/notifications');
 const chatHandler = require('./sockets/chatHandler');
 const notificationHandler = require('./sockets/notificationHandler');
 const authenticateSocket = require('./sockets/authenticateSocket');
@@ -25,9 +26,31 @@ const { setIO } = require('./sockets/socketState');
 const app = express();
 const server = http.createServer(app);
 
+const allowedOrigins = Array.isArray(env.clientOrigins) && env.clientOrigins.length > 0
+  ? env.clientOrigins
+  : [env.clientOrigin];
+
+const corsOptions = {
+  origin(origin, callback) {
+    // Allow non-browser requests (no Origin header).
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error('CORS origin not allowed'));
+  },
+  credentials: true
+};
+
 const io = new Server(server, {
   cors: {
-    origin: env.clientOrigin,
+    origin: allowedOrigins,
     credentials: true
   },
   connectionStateRecovery: {
@@ -41,7 +64,7 @@ io.use(authenticateSocket);
 setIO(io);
 
 app.use(helmet());
-app.use(cors({ origin: env.clientOrigin, credentials: true }));
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(morgan(env.nodeEnv === 'production' ? 'combined' : 'dev'));
 
@@ -58,6 +81,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 chatHandler(io);
 notificationHandler(io);
