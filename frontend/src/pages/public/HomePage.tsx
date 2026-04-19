@@ -5,8 +5,6 @@ import { ApiError } from '../../services/apiClient';
 import {
   getPublicBlogs,
   getPublicDoctors,
-<<<<<<< HEAD
-<<<<<<< HEAD
   getPublicTestimonials,
   subscribeNewsletter,
   type PublicBlogCard,
@@ -22,25 +20,6 @@ const stats = [
   { value: '2,000+', label: 'Articles' }
 ];
 
-=======
-=======
-  getPublicTestimonials,
->>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
-  subscribeNewsletter,
-  type PublicBlogCard,
-  type PublicDoctorCard,
-  type PublicTestimonialCard
-} from '../../services/publicContentService';
-import { ROUTE_PATHS } from '../../routes/routePaths';
-
-const stats = [
-  { value: '10,000+', label: 'Patients' },
-  { value: '500+', label: 'Doctors' },
-  { value: '50,000+', label: 'Consultations' },
-  { value: '2,000+', label: 'Articles' }
-];
-
->>>>>>> bbd6be8eb45b80dd474a49dd2221607eea17692f
 const quickLinks = ['Home', 'Doctors', 'Blogs', 'About', 'Contact'];
 const specializations = ['Cardiology', 'Endocrinology', 'General Medicine', 'Nutrition', 'Pulmonology'];
 
@@ -101,39 +80,10 @@ function StepArt({ kind }: Readonly<{ kind: 'account' | 'vitals' | 'care' }>) {
 
 export default function HomePage() {
   const [headerScrolled, setHeaderScrolled] = useState(false);
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
   const [featuredDoctors, setFeaturedDoctors] = useState<PublicDoctorCard[]>([]);
   const [featuredBlogs, setFeaturedBlogs] = useState<PublicBlogCard[]>([]);
   const [testimonials, setTestimonials] = useState<PublicTestimonialCard[]>([]);
   const [liveDataError, setLiveDataError] = useState('');
-<<<<<<< HEAD
-=======
-  const [featuredDoctors, setFeaturedDoctors] = useState<PublicDoctorCard[]>(
-    publicDoctors.slice(0, 6).map((doctor, index) => ({
-      id: String(index),
-      name: doctor.name,
-      specialization: doctor.specialization,
-      experience: doctor.experience,
-      fee: doctor.fee,
-      rating: doctor.rating
-    }))
-  );
-  const [featuredBlogs, setFeaturedBlogs] = useState<PublicBlogCard[]>(
-    publicBlogs.slice(0, 6).map((blog, index) => ({
-      id: String(index),
-      category: blog.category,
-      title: blog.title,
-      author: blog.author,
-      date: blog.date,
-      excerpt: blog.excerpt
-    }))
-  );
->>>>>>> bbd6be8eb45b80dd474a49dd2221607eea17692f
-=======
->>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
   const [email, setEmail] = useState('');
   const [subscribeMessage, setSubscribeMessage] = useState('');
   const [subscribeError, setSubscribeError] = useState('');
@@ -155,16 +105,11 @@ export default function HomePage() {
 
     async function loadPublicData() {
       try {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
         const [doctors, blogs, backendTestimonials] = await Promise.all([
           getPublicDoctors(6),
           getPublicBlogs(6),
           getPublicTestimonials(12)
         ]);
-<<<<<<< HEAD
         if (!cancelled) {
           setFeaturedDoctors(doctors);
           setFeaturedBlogs(blogs);
@@ -178,28 +123,6 @@ export default function HomePage() {
           setTestimonials([]);
           setLiveDataError('Unable to load live backend data right now.');
         }
-=======
-        const [doctors, blogs] = await Promise.all([getPublicDoctors(6), getPublicBlogs(6)]);
-=======
->>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
-        if (!cancelled) {
-          setFeaturedDoctors(doctors);
-          setFeaturedBlogs(blogs);
-          setTestimonials(backendTestimonials);
-          setLiveDataError('');
-        }
-      } catch {
-<<<<<<< HEAD
-        // Keep fallback seed content when API fetch fails.
->>>>>>> bbd6be8eb45b80dd474a49dd2221607eea17692f
-=======
-        if (!cancelled) {
-          setFeaturedDoctors([]);
-          setFeaturedBlogs([]);
-          setTestimonials([]);
-          setLiveDataError('Unable to load live backend data right now.');
-        }
->>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
       }
     }
 
@@ -271,21 +194,12 @@ export default function HomePage() {
       </header>
 
       <main>
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
         {liveDataError ? (
           <section className="section-shell" style={{ paddingTop: '1rem' }}>
             <p className="hm-subscribe-error">{liveDataError}</p>
           </section>
         ) : null}
 
-<<<<<<< HEAD
-=======
->>>>>>> bbd6be8eb45b80dd474a49dd2221607eea17692f
-=======
->>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
         <section className="hm-hero section-shell">
           <div className="hm-hero-grid">
             <div className="hm-hero-copy">
@@ -393,10 +307,6 @@ export default function HomePage() {
             ))}
           </div>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
           {featuredDoctors.length === 0 ? (
             <p className="hm-subtext" style={{ textAlign: 'center', marginTop: '1rem' }}>
               No doctors available yet.
@@ -438,43 +348,6 @@ export default function HomePage() {
           </div>
         </section>
 
-=======
-          <div className="hm-section-action">
-            <Link to={ROUTE_PATHS.public.doctors} className="hm-btn hm-btn-outline hm-btn-lg">
-              View All
-            </Link>
-          </div>
-        </section>
-
-        <section className="hm-how-it-works" id="about">
-          <div className="section-shell hm-section">
-            <div className="hm-section-heading">
-              <h2>How It Works</h2>
-            </div>
-            <div className="hm-step-grid">
-              <article className="hm-step-card">
-                <StepArt kind="account" />
-                <span className="hm-step-number">1</span>
-                <h3>Create Your Account</h3>
-                <p>Register as patient or doctor and complete your secure onboarding in minutes.</p>
-              </article>
-              <article className="hm-step-card">
-                <StepArt kind="vitals" />
-                <span className="hm-step-number">2</span>
-                <h3>Log Your Daily Vitals</h3>
-                <p>Track blood pressure, glucose, heart rate, and other key indicators every day.</p>
-              </article>
-              <article className="hm-step-card">
-                <StepArt kind="care" />
-                <span className="hm-step-number">3</span>
-                <h3>Get Expert Care</h3>
-                <p>Doctors monitor your trends, provide guidance, and prescribe when needed.</p>
-              </article>
-            </div>
-          </div>
-        </section>
-
->>>>>>> bbd6be8eb45b80dd474a49dd2221607eea17692f
         <section className="hm-stats-section">
           <div className="section-shell hm-stats-grid">
             {stats.map((stat) => (
@@ -508,21 +381,12 @@ export default function HomePage() {
             ))}
           </div>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
           {featuredBlogs.length === 0 ? (
             <p className="hm-subtext" style={{ textAlign: 'center', marginTop: '1rem' }}>
               No blog articles available yet.
             </p>
           ) : null}
 
-<<<<<<< HEAD
-=======
->>>>>>> bbd6be8eb45b80dd474a49dd2221607eea17692f
-=======
->>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
           <div className="hm-section-action">
             <Link to={ROUTE_PATHS.public.blogs} className="hm-btn hm-btn-outline hm-btn-lg">
               View All Articles
@@ -536,10 +400,6 @@ export default function HomePage() {
               <h2>What Patients Say</h2>
             </div>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
             {testimonials.length > 0 ? (
               <div
                 className="hm-testimonials-carousel"
@@ -575,7 +435,6 @@ export default function HomePage() {
                         <StarRow />
                         <p className="hm-quote">{testimonial.quote}</p>
                       </article>
-<<<<<<< HEAD
                     </div>
                   ))}
 
@@ -654,99 +513,6 @@ export default function HomePage() {
                   x
                 </a>
               </div>
-=======
-            <div className="hm-card-grid hm-card-grid-3">
-              {testimonials.map((testimonial) => (
-                <article key={testimonial.name} className="hm-card hm-testimonial-card">
-                  <span className="hm-quote-mark" aria-hidden="true">
-                    &quot;
-                  </span>
-                  <div className="hm-testimonial-header">
-                    <div className="hm-avatar" aria-hidden="true" />
-                    <div>
-                      <h3>{testimonial.name}</h3>
-                      <p>{testimonial.role}</p>
-=======
->>>>>>> 3679fdb51da36730665e1e953a244aa81087f3e4
-                    </div>
-                  ))}
-
-                  {testimonials.map((testimonial) => (
-                    <div key={`duplicate-${testimonial.id}`} className="hm-testimonial-item" aria-hidden="true">
-                      <article className="hm-card hm-testimonial-card">
-                        <span className="hm-quote-mark" aria-hidden="true">
-                          &quot;
-                        </span>
-                        <div className="hm-testimonial-header">
-                          <div className="hm-avatar" aria-hidden="true" />
-                          <div>
-                            <h3>{testimonial.name}</h3>
-                            <p>{testimonial.role}</p>
-                          </div>
-                        </div>
-                        <StarRow />
-                        <p className="hm-quote">{testimonial.quote}</p>
-                      </article>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <p className="hm-subtext" style={{ textAlign: 'center', marginTop: '1rem' }}>
-                No patient reviews available yet.
-              </p>
-            )}
-          </div>
-        </section>
-      </main>
-
-      <footer className="hm-footer" id="contact">
-        <div className="section-shell">
-          <div className="hm-footer-grid">
-            <section>
-              <h3>About HealthMonitor Pro</h3>
-              <p>
-                A secure health monitoring platform helping patients and doctors stay connected with
-                real-time insight, preventive care, and trusted clinical guidance.
-              </p>
-            </section>
-            <section>
-              <h3>Quick Links</h3>
-              <ul>
-                {quickLinks.map((link) => (
-                  <li key={link}>
-                    <a href={`#${link.toLowerCase() === 'home' ? 'home' : link.toLowerCase()}`}>{link}</a>
-                  </li>
-                ))}
-              </ul>
-            </section>
-            <section>
-              <h3>Specializations</h3>
-              <ul>
-                {specializations.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </section>
-            <section>
-              <h3>Contact</h3>
-              <ul>
-                <li>support@healthmonitorpro.com</li>
-                <li>+92 300 0000000</li>
-                <li>Lahore, Pakistan</li>
-              </ul>
-              <div className="hm-social-icons" aria-label="Social links">
-                <a href="#" aria-label="Facebook">
-                  f
-                </a>
-                <a href="#" aria-label="LinkedIn">
-                  in
-                </a>
-                <a href="#" aria-label="X">
-                  x
-                </a>
-              </div>
->>>>>>> bbd6be8eb45b80dd474a49dd2221607eea17692f
             </section>
           </div>
 
