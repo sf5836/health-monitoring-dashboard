@@ -11,6 +11,42 @@ import {
 
 type AppointmentTab = 'upcoming' | 'past' | 'cancelled';
 
+const TIME_SLOTS = [
+  '09:00',
+  '09:30',
+  '10:00',
+  '10:30',
+  '11:00',
+  '11:30',
+  '12:00',
+  '14:00',
+  '14:30',
+  '15:00',
+  '15:30',
+  '16:00'
+];
+
+function appointmentDateTime(appointment: PortalAppointment): Date | null {
+  if (!appointment.date || !appointment.time) return null;
+  const parsed = new Date(`${appointment.date}T${appointment.time}:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function isJoinCallAvailable(appointment: PortalAppointment): boolean {
+  if (appointment.type !== 'teleconsult' || appointment.status === 'cancelled') return false;
+  const slot = appointmentDateTime(appointment);
+  if (!slot) return false;
+
+  const diff = slot.getTime() - Date.now();
+  return diff <= 60 * 60 * 1000 && diff >= 0;
+}
+
+function statusClass(status: PortalAppointment['status']): string {
+  if (status === 'confirmed' || status === 'completed') return 'is-risk-normal';
+  if (status === 'pending') return 'is-risk-medium';
+  return 'is-risk-high';
+}
+
 export default function PatientAppointmentsPage() {
   const [appointments, setAppointments] = useState<PortalAppointment[]>([]);
   const [connectedDoctors, setConnectedDoctors] = useState<ConnectedDoctor[]>([]);
@@ -42,9 +78,10 @@ export default function PatientAppointmentsPage() {
 
         setAppointments(appointmentData);
         setConnectedDoctors(doctorData);
-        if (!bookingForm.doctorId && doctorData[0]) {
-          setBookingForm((previous) => ({ ...previous, doctorId: doctorData[0].doctorUserId }));
-        }
+        setBookingForm((previous) => ({
+          ...previous,
+          doctorId: previous.doctorId || doctorData[0]?.doctorUserId || ''
+        }));
         setError('');
       } catch {
         if (cancelled) return;
@@ -61,7 +98,7 @@ export default function PatientAppointmentsPage() {
     return () => {
       cancelled = true;
     };
-  }, [bookingForm.doctorId]);
+  }, []);
 
   const categorized = useMemo(() => {
     const upcoming: PortalAppointment[] = [];
@@ -96,7 +133,12 @@ export default function PatientAppointmentsPage() {
       const created = await createPatientAppointment(bookingForm);
       setAppointments((previous) => [created, ...previous]);
       setIsBookingOpen(false);
-      setBookingForm((previous) => ({ ...previous, notes: '' }));
+      setBookingForm((previous) => ({
+        ...previous,
+        date: '',
+        time: '',
+        notes: ''
+      }));
       setActiveTab('upcoming');
     } catch {
       setError('Unable to create appointment. Please verify doctor connection and try again.');
@@ -139,11 +181,11 @@ export default function PatientAppointmentsPage() {
   }
 
   return (
-    <section className="patient-page">
+    <section className="patient-page patient-appointments-page">
       <header className="patient-page-head">
         <div>
           <h2>Appointments</h2>
-          <p>Manage your upcoming and completed consultations.</p>
+          <p>Manage your upcoming and completed consultations</p>
         </div>
         <button type="button" className="patient-primary-button" onClick={() => setIsBookingOpen(true)}>
           Book Appointment
@@ -152,7 +194,7 @@ export default function PatientAppointmentsPage() {
 
       {error ? <p className="patient-error-banner">{error}</p> : null}
 
-      <section className="patient-tab-row">
+      <section className="patient-tab-row patient-appointment-tabs">
         <button
           type="button"
           className={`patient-tab-pill ${activeTab === 'upcoming' ? 'is-active' : ''}`}
@@ -182,42 +224,59 @@ export default function PatientAppointmentsPage() {
         ) : visibleAppointments.length === 0 ? (
           <p className="patient-empty-state">No appointments in this tab.</p>
         ) : (
-          <ul className="patient-list">
+          <ul className="patient-list patient-appointment-list">
             {visibleAppointments.map((appointment) => (
-              <li key={appointment.id} className={`patient-list-item patient-appointment-row ${appointment.type}`}>
-                <div>
-                  <p>
-                    {appointment.date} at {appointment.time}
-                  </p>
-                  <small>
-                    {appointment.doctorName} | {appointment.type === 'teleconsult' ? 'Teleconsult' : 'In-person'}
-                  </small>
+              <li
+                key={appointment.id}
+                className={`patient-list-item patient-appointment-row is-${appointment.type}`}
+              >
+                <div className="patient-appointment-main">
+                  <div className="patient-appointment-topline">
+                    <p className="patient-appointment-datetime">
+                      {appointment.date} at {appointment.time}
+                    </p>
+                    <span className="patient-appointment-type-pill">
+                      {appointment.type === 'teleconsult' ? 'Teleconsult' : 'In-person'}
+                    </span>
+                    <span className={`patient-risk-pill ${statusClass(appointment.status)}`}>
+                      {appointment.status}
+                    </span>
+                  </div>
+
+                  <p className="patient-appointment-doctor">{appointment.doctorName}</p>
                   {appointment.notes ? <small>{appointment.notes}</small> : null}
                 </div>
 
-                <div className="patient-inline-actions">
-                  <span className={`patient-risk-pill ${appointment.status === 'confirmed' ? 'is-risk-normal' : 'is-risk-medium'}`}>
-                    {appointment.status}
-                  </span>
+                <div className="patient-inline-actions patient-appointment-actions">
                   {activeTab === 'upcoming' ? (
                     <>
-                      <button
-                        type="button"
-                        className="patient-link-button"
-                        disabled={busyAppointmentId === appointment.id}
-                        onClick={() => handleReschedule(appointment)}
-                      >
-                        Reschedule
-                      </button>
                       <button
                         type="button"
                         className="patient-link-button danger"
                         disabled={busyAppointmentId === appointment.id}
                         onClick={() => handleCancel(appointment.id)}
                       >
-                        Cancel
+                        Cancel Appointment
                       </button>
+                      <button
+                        type="button"
+                        className="patient-secondary-button"
+                        disabled={busyAppointmentId === appointment.id}
+                        onClick={() => handleReschedule(appointment)}
+                      >
+                        Reschedule
+                      </button>
+
+                      {isJoinCallAvailable(appointment) ? (
+                        <button type="button" className="patient-primary-button">
+                          Join Call
+                        </button>
+                      ) : null}
                     </>
+                  ) : activeTab === 'past' ? (
+                    <button type="button" className="patient-link-button">
+                      View Summary
+                    </button>
                   ) : null}
                 </div>
               </li>
@@ -228,7 +287,7 @@ export default function PatientAppointmentsPage() {
 
       {isBookingOpen ? (
         <section className="patient-modal-backdrop" role="dialog" aria-modal="true">
-          <article className="patient-modal">
+          <article className="patient-modal patient-appointment-modal">
             <header className="patient-card-head">
               <h3>Book New Appointment</h3>
               <button type="button" className="patient-link-button" onClick={() => setIsBookingOpen(false)}>
@@ -237,7 +296,7 @@ export default function PatientAppointmentsPage() {
             </header>
 
             <form className="patient-form-grid" onSubmit={handleBookAppointment}>
-              <label>
+              <label className="patient-form-span-2">
                 Doctor
                 <select
                   value={bookingForm.doctorId}
@@ -245,6 +304,7 @@ export default function PatientAppointmentsPage() {
                     setBookingForm((previous) => ({ ...previous, doctorId: event.target.value }))
                   }
                 >
+                  {connectedDoctors.length === 0 ? <option value="">No connected doctors</option> : null}
                   {connectedDoctors.map((doctor) => (
                     <option key={doctor.doctorUserId} value={doctor.doctorUserId}>
                       {doctor.fullName} ({doctor.specialization || 'Specialist'})
@@ -253,21 +313,22 @@ export default function PatientAppointmentsPage() {
                 </select>
               </label>
 
-              <label>
-                Appointment Type
-                <select
-                  value={bookingForm.type}
-                  onChange={(event) =>
-                    setBookingForm((previous) => ({
-                      ...previous,
-                      type: event.target.value as 'in_person' | 'teleconsult'
-                    }))
-                  }
+              <div className="patient-form-span-2 patient-appointment-type-toggle">
+                <button
+                  type="button"
+                  className={`patient-tab-pill ${bookingForm.type === 'in_person' ? 'is-active' : ''}`}
+                  onClick={() => setBookingForm((previous) => ({ ...previous, type: 'in_person' }))}
                 >
-                  <option value="in_person">In-person</option>
-                  <option value="teleconsult">Teleconsult</option>
-                </select>
-              </label>
+                  In-person
+                </button>
+                <button
+                  type="button"
+                  className={`patient-tab-pill ${bookingForm.type === 'teleconsult' ? 'is-active' : ''}`}
+                  onClick={() => setBookingForm((previous) => ({ ...previous, type: 'teleconsult' }))}
+                >
+                  Teleconsult
+                </button>
+              </div>
 
               <label>
                 Date
@@ -280,16 +341,21 @@ export default function PatientAppointmentsPage() {
                 />
               </label>
 
-              <label>
-                Time
-                <input
-                  type="time"
-                  value={bookingForm.time}
-                  onChange={(event) =>
-                    setBookingForm((previous) => ({ ...previous, time: event.target.value }))
-                  }
-                />
-              </label>
+              <div>
+                <p className="patient-card-title">Time Slot</p>
+                <div className="patient-time-slot-grid">
+                  {TIME_SLOTS.map((slot) => (
+                    <button
+                      key={slot}
+                      type="button"
+                      className={`patient-time-slot ${bookingForm.time === slot ? 'is-active' : ''}`}
+                      onClick={() => setBookingForm((previous) => ({ ...previous, time: slot }))}
+                    >
+                      {slot}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               <label className="patient-form-span-2">
                 Notes

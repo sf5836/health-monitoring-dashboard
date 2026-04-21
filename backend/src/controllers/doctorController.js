@@ -7,6 +7,7 @@ const Appointment = require('../models/Appointment');
 const Prescription = require('../models/Prescription');
 const Blog = require('../models/Blog');
 const DoctorProfile = require('../models/DoctorProfile');
+const { uploadBuffer } = require('../services/s3Service');
 
 function badRequest(message) {
   const error = new Error(message);
@@ -62,6 +63,50 @@ function getDayRegex(day) {
   return new RegExp(aliases[short], 'i');
 }
 
+function scheduleToText(availabilitySchedule) {
+  if (!Array.isArray(availabilitySchedule) || availabilitySchedule.length === 0) {
+    return undefined;
+  }
+
+  return availabilitySchedule
+    .map((slot) => `${slot.day}: ${slot.startTime}-${slot.endTime}`)
+    .join('; ');
+}
+
+async function uploadLegalDocuments(legalDocuments) {
+  if (!Array.isArray(legalDocuments) || legalDocuments.length === 0) {
+    return [];
+  }
+
+  const uploaded = [];
+
+  for (const document of legalDocuments) {
+    const rawBase64 = String(document.dataBase64 || '').trim();
+    const normalizedBase64 = rawBase64.includes(',') ? rawBase64.split(',').pop() : rawBase64;
+    const buffer = Buffer.from(normalizedBase64 || '', 'base64');
+
+    if (!buffer.length) {
+      throw badRequest('Invalid legal document payload');
+    }
+
+    const upload = await uploadBuffer({
+      fileName: document.fileName,
+      _buffer: buffer,
+      contentType: document.contentType || 'application/pdf'
+    });
+
+    uploaded.push({
+      label: document.label ? String(document.label).trim() : undefined,
+      fileName: upload.fileName,
+      fileUrl: upload.url,
+      contentType: upload.contentType,
+      uploadedAt: new Date()
+    });
+  }
+
+  return uploaded;
+}
+
 async function getPublicDoctors(req, res, next) {
   try {
     const limit = Math.min(Math.max(Number(req.query.limit || 12), 1), 60);
@@ -110,11 +155,17 @@ async function getPublicDoctors(req, res, next) {
 
     const selectedSort = sortMap[sort] || sortMap.latest;
 
-    const baseQuery = DoctorProfile.find(filter).populate('userId', 'fullName').lean();
+    const baseQuery = DoctorProfile.find(filter).lean();
 
     if (search) {
       const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      const matchedUsers = await User.find({ fullName: { $regex: regex } }).select('_id').lean();
+      const matchedUsers = await User.find({
+        role: 'doctor',
+        isActive: true,
+        fullName: { $regex: regex }
+      })
+        .select('_id')
+        .lean();
       const matchedUserIds = matchedUsers.map((item) => item._id);
 
       baseQuery.or([
@@ -124,16 +175,39 @@ async function getPublicDoctors(req, res, next) {
       ]);
     }
 
-    const total = await DoctorProfile.countDocuments(baseQuery.getFilter());
-
-    const doctors = await DoctorProfile.find(baseQuery.getFilter())
-      .populate('userId', 'fullName')
+    const profiles = await DoctorProfile.find(baseQuery.getFilter())
+      .populate({
+        path: 'userId',
+        select: 'fullName role isActive',
+        match: { role: 'doctor', isActive: true }
+      })
       .sort(selectedSort)
-      .skip(skip)
-      .limit(limit)
       .lean();
 
-    const allSpecializations = await DoctorProfile.distinct('specialization', { approvalStatus: 'approved' });
+    const filteredProfiles = profiles.filter((profile) => profile.userId);
+    const total = filteredProfiles.length;
+    const doctors = filteredProfiles.slice(skip, skip + limit);
+
+    const specializationsRaw = await DoctorProfile.aggregate([
+      { $match: { approvalStatus: 'approved' } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      { $unwind: '$user' },
+      { $match: { 'user.role': 'doctor', 'user.isActive': true } },
+      {
+        $group: {
+          _id: '$specialization'
+        }
+      }
+    ]);
+
+    const allSpecializations = specializationsRaw.map((item) => item._id);
 
     const safeDoctors = doctors.map((profile) => ({
       _id: profile._id,
@@ -178,6 +252,14 @@ async function getPublicDoctorById(req, res, next) {
 
     if (!mongoose.Types.ObjectId.isValid(doctorId)) {
       throw badRequest('Invalid doctorId');
+    }
+
+    const user = await User.findOne({ _id: doctorId, role: 'doctor', isActive: true }).select('_id').lean();
+
+    if (!user) {
+      const error = new Error('Doctor not found');
+      error.statusCode = 404;
+      throw error;
     }
 
     const profile = await DoctorProfile.findOne({
@@ -236,11 +318,11 @@ async function getPublicTestimonials(req, res, next) {
     const safeTestimonials = testimonials
       .map((item) => ({
         id: item._id,
-        name: item.patientId?.fullName || 'Patient',
-        role: item.doctorId?.fullName ? `Patient of ${item.doctorId.fullName}` : 'Patient',
+        name: String(item.patientId?.fullName || '').trim(),
+        role: item.doctorId?.fullName ? `Patient of ${item.doctorId.fullName}` : '',
         quote: String(item.notes || '').trim()
       }))
-      .filter((item) => item.quote.length > 0);
+      .filter((item) => item.quote.length > 0 && item.name.length > 0);
 
     res.json({ success: true, data: { testimonials: safeTestimonials } });
   } catch (error) {
@@ -268,13 +350,13 @@ async function getPublicDoctorReviews(req, res, next) {
       .lean();
 
     const safeReviews = reviews
-      .map((item, index) => ({
+      .map((item) => ({
         id: item._id,
-        name: item.patientId?.fullName || `Patient ${index + 1}`,
+        name: String(item.patientId?.fullName || '').trim(),
         date: item.updatedAt || item.createdAt,
         quote: String(item.notes || '').trim()
       }))
-      .filter((item) => item.quote.length > 0);
+      .filter((item) => item.quote.length > 0 && item.name.length > 0);
 
     res.json({
       success: true,
@@ -482,12 +564,15 @@ async function updateMyProfile(req, res, next) {
       fullName,
       phone,
       specialization,
+      licenseNumber,
       qualifications,
       experienceYears,
       hospital,
       fee,
       bio,
-      availability
+      availability,
+      availabilitySchedule,
+      legalDocuments
     } = req.body;
 
     const user = await User.findOne({ _id: doctorId, role: 'doctor' });
@@ -504,6 +589,7 @@ async function updateMyProfile(req, res, next) {
 
     const profileFields = {
       specialization,
+      licenseNumber,
       qualifications,
       experienceYears,
       hospital,
@@ -516,6 +602,17 @@ async function updateMyProfile(req, res, next) {
       if (value !== undefined) {
         doctorProfile[key] = value;
       }
+    }
+
+    if (Array.isArray(availabilitySchedule)) {
+      doctorProfile.availabilitySchedule = availabilitySchedule;
+      if (availability === undefined) {
+        doctorProfile.availability = scheduleToText(availabilitySchedule);
+      }
+    }
+
+    if (Array.isArray(legalDocuments)) {
+      doctorProfile.legalDocuments = await uploadLegalDocuments(legalDocuments);
     }
 
     await Promise.all([user.save(), doctorProfile.save()]);

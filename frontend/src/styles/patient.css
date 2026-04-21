@@ -18,10 +18,6 @@
   background: var(--patient-page-bg);
 }
 
-.patient-shell.is-sidebar-collapsed {
-  grid-template-columns: 74px minmax(0, 1fr);
-}
-
 .patient-sidebar {
   background: var(--patient-sidebar-bg);
   color: #ffffff;
@@ -32,22 +28,13 @@
   position: sticky;
   top: 0;
   height: 100vh;
+  overflow: hidden;
 }
 
 .patient-sidebar-top {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-}
-
-.patient-sidebar-toggle {
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: transparent;
-  color: #ffffff;
-  border-radius: 8px;
-  padding: 0.35rem 0.5rem;
-  font-size: 0.75rem;
-  cursor: pointer;
 }
 
 .patient-sidebar-brand {
@@ -147,8 +134,25 @@
   gap: 0.5rem;
 }
 
+.patient-sidebar-mobile-toggle {
+  display: none;
+  border: 1px solid var(--patient-border);
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.patient-sidebar-overlay {
+  display: none;
+  border: none;
+  background: rgba(15, 23, 42, 0.45);
+}
+
 .patient-content {
   padding: 1.4rem 1.5rem 1.75rem;
+  min-width: 0;
 }
 
 .patient-page {
@@ -830,7 +834,442 @@
   margin-bottom: 0.8rem;
 }
 
+.patient-vitals-head {
+  align-items: flex-end;
+}
+
+.patient-vitals-head-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.patient-vitals-date-range {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.patient-vitals-date-range label {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  color: var(--patient-subtext);
+}
+
+.patient-vitals-date-range input,
+.patient-trends-custom-range input {
+  border: 1px solid var(--patient-border);
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+  font: inherit;
+}
+
+.patient-vitals-form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.patient-vitals-row-full {
+  display: grid;
+  gap: 0.3rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1f2937;
+}
+
+.patient-vitals-two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.patient-vitals-fieldset {
+  border: 1px solid var(--patient-border);
+  border-radius: 12px;
+  padding: 0.8rem;
+  background: #fcfefd;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.patient-vitals-fieldset label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.84rem;
+  color: #1f2937;
+}
+
+.patient-vitals-fieldset input,
+.patient-vitals-row-full input,
+.patient-vitals-row-full textarea,
+.patient-vitals-fieldset textarea,
+.patient-vitals-fieldset select {
+  border: 1px solid var(--patient-border);
+  border-radius: 8px;
+  padding: 0.6rem 0.7rem;
+  font: inherit;
+  background: #ffffff;
+}
+
+.patient-vitals-fieldset-title {
+  margin: 0;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.patient-vitals-inline-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.patient-field-hint {
+  margin: 0;
+  color: var(--patient-subtext);
+  font-size: 0.78rem;
+}
+
+.patient-glucose-mode-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.patient-glucose-mode-pill {
+  border: 1px solid #0d5c45;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0d5c45;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.patient-glucose-mode-pill.is-active {
+  background: #0d5c45;
+  color: #ffffff;
+}
+
+.patient-vitals-submit-row {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.patient-vitals-submit-row .patient-primary-button {
+  flex: 1;
+  min-width: 220px;
+}
+
+.patient-table-sort {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+}
+
+.patient-table-sort span {
+  font-size: 0.68rem;
+  color: var(--patient-subtext);
+  text-transform: uppercase;
+}
+
+.patient-trends-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.patient-trends-metric-tabs,
+.patient-trends-range-tabs,
+.patient-doctor-filter-pills,
+.patient-appointment-type-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.patient-trends-custom-range {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.patient-trends-custom-range label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.84rem;
+  color: #1f2937;
+  min-width: 170px;
+}
+
+.patient-trends-chart-card {
+  overflow: auto;
+}
+
+.patient-flagged-card h3 {
+  color: #92400e;
+}
+
+.patient-doctors-empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  padding: 1.5rem 0.9rem;
+  text-align: center;
+}
+
+.patient-doctors-empty-state h4,
+.patient-doctors-empty-state p {
+  margin: 0;
+}
+
+.patient-doctors-connected-list {
+  gap: 0.7rem;
+}
+
+.patient-doctor-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.patient-doctor-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0d5c45 0%, #1a9e72 100%);
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.patient-doctor-online-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #22c55e;
+  border: 2px solid #ffffff;
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+}
+
+.patient-doctor-name {
+  margin: 0;
+  font-weight: 700;
+}
+
+.patient-doctor-meta {
+  margin: 0.15rem 0;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: rgba(13, 92, 69, 0.14);
+  color: #0d5c45;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+}
+
+.patient-doctor-actions {
+  align-items: center;
+}
+
+.patient-doctor-discovery-modal {
+  width: min(1120px, 100%);
+}
+
+.patient-directory-card {
+  display: grid;
+  gap: 0.4rem;
+  justify-items: start;
+}
+
+.patient-directory-card .patient-doctor-avatar {
+  width: 58px;
+  height: 58px;
+  font-size: 0.86rem;
+}
+
+.patient-appointment-tabs .patient-tab-pill {
+  min-width: 138px;
+}
+
+.patient-appointment-list {
+  gap: 0.7rem;
+}
+
+.patient-appointment-row {
+  border-left: 4px solid #0d5c45;
+}
+
+.patient-appointment-row.is-teleconsult {
+  border-left-color: #14a0a0;
+}
+
+.patient-appointment-main {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.patient-appointment-topline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.patient-appointment-datetime {
+  margin: 0;
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+}
+
+.patient-appointment-type-pill {
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid rgba(13, 92, 69, 0.25);
+  background: rgba(13, 92, 69, 0.08);
+  color: #0d5c45;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.patient-appointment-doctor {
+  margin: 0;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.patient-appointment-actions {
+  align-items: center;
+}
+
+.patient-time-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.patient-time-slot {
+  border: 1px solid var(--patient-border);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0.45rem 0.4rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.patient-time-slot.is-active {
+  border-color: #0d5c45;
+  background: #0d5c45;
+  color: #ffffff;
+}
+
+.patient-chat-layout-redesign {
+  min-height: 620px;
+}
+
+.patient-chat-sidebar-head {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.patient-chat-sidebar-head h3 {
+  margin: 0;
+}
+
+.patient-chat-sidebar-head input {
+  border: 1px solid var(--patient-border);
+  border-radius: 999px;
+  padding: 0.55rem 0.75rem;
+  font: inherit;
+}
+
+.patient-chat-list-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.patient-chat-list-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0d5c45 0%, #1a9e72 100%);
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  position: relative;
+}
+
+.patient-chat-list-content {
+  display: grid;
+  text-align: left;
+}
+
+.patient-chat-list-content small {
+  color: var(--patient-subtext);
+}
+
+.patient-chat-list-time {
+  color: var(--patient-subtext);
+}
+
+.patient-chat-thread-head-redesign {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.patient-chat-thread-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.patient-chat-thread-profile h3,
+.patient-chat-thread-profile small {
+  margin: 0;
+}
+
+.patient-chat-bubble {
+  border-radius: 18px 18px 18px 6px;
+}
+
+.patient-chat-bubble.is-mine {
+  border-radius: 18px 18px 6px 18px;
+}
+
+.patient-chat-bubble p a {
+  color: inherit;
+  font-weight: 700;
+}
+
 @media (max-width: 1180px) {
+  .patient-shell {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
   .patient-quick-stats-grid,
   .patient-sparkline-grid,
   .patient-summary-grid {
@@ -840,20 +1279,53 @@
   .patient-directory-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .patient-vitals-two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .patient-time-slot-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 980px) {
   .patient-shell {
     grid-template-columns: 1fr;
+    position: relative;
   }
 
   .patient-sidebar {
-    position: static;
-    height: auto;
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(84vw, 320px);
+    height: 100dvh;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 220ms ease;
+    overflow-y: auto;
+  }
+
+  .patient-shell.is-mobile-sidebar-open .patient-sidebar {
+    transform: translateX(0);
+  }
+
+  .patient-shell.is-mobile-sidebar-open .patient-sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
   }
 
   .patient-topbar {
     position: static;
+    padding: 0.85rem 1rem;
+  }
+
+  .patient-sidebar-mobile-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .patient-main-grid,
@@ -871,6 +1343,20 @@
 
   .patient-welcome-metrics {
     text-align: left;
+  }
+
+  .patient-vitals-head {
+    align-items: flex-start;
+  }
+
+  .patient-vitals-head-actions,
+  .patient-vitals-date-range {
+    width: 100%;
+  }
+
+  .patient-vitals-date-range {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -904,5 +1390,53 @@
   .patient-topbar,
   .patient-notification-panel {
     margin: 0;
+  }
+
+  .patient-topbar {
+    padding: 0.75rem;
+  }
+
+  .patient-topbar h1 {
+    font-size: 1.08rem;
+    line-height: 1.25;
+  }
+
+  .patient-topbar-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .patient-sidebar-mobile-toggle,
+  .patient-notification-button {
+    font-size: 0.82rem;
+    padding: 0.4rem 0.65rem;
+  }
+
+  .patient-vitals-date-range,
+  .patient-vitals-head-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .patient-vitals-date-range {
+    display: grid;
+  }
+
+  .patient-time-slot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .patient-chat-thread-head-redesign {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 520px) {
+  .patient-sidebar {
+    width: min(92vw, 320px);
+  }
+
+  .patient-chat-bubble {
+    max-width: 90%;
   }
 }

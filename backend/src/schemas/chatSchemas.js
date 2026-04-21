@@ -4,6 +4,10 @@ const conversationIdParamsSchema = z.object({
   conversationId: objectId
 });
 
+const createConversationSchema = z.object({
+  toUserId: objectId
+});
+
 const sendMessageSchema = z
   .object({
     text: z.string().min(1).optional(),
@@ -15,6 +19,7 @@ const sendMessageSchema = z
   });
 
 module.exports = {
+  createConversationSchema,
   conversationIdParamsSchema,
   sendMessageSchema
 };

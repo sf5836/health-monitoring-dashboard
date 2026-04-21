@@ -34,7 +34,12 @@ router.get(
 	doctorController.getPublicDoctorById
 );
 
-router.use(verifyToken, checkRole('doctor'), requireDoctorApproved);
+router.use(verifyToken, checkRole('doctor'));
+
+router.get('/me/profile', doctorController.getMyProfile);
+router.patch('/me/profile', validate({ body: updateDoctorProfileSchema }), doctorController.updateMyProfile);
+
+router.use(requireDoctorApproved);
 
 router.get('/me/dashboard', doctorController.getMyDashboard);
 router.get('/me/patients', doctorController.getMyPatients);
@@ -53,9 +58,6 @@ router.post(
 	validate({ params: patientIdParamsSchema, body: addPatientNoteSchema }),
 	doctorController.addPatientNote
 );
-
-router.get('/me/profile', doctorController.getMyProfile);
-router.patch('/me/profile', validate({ body: updateDoctorProfileSchema }), doctorController.updateMyProfile);
 
 router.get('/me/appointments', appointmentController.getMyAppointmentsAsDoctor);
 router.patch(

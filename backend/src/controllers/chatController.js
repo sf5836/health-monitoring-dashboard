@@ -1,7 +1,127 @@
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
+const PatientProfile = require('../models/PatientProfile');
+const User = require('../models/User');
 const { createNotification } = require('../services/notificationService');
 const { getIO } = require('../sockets/socketState');
+
+async function ensurePatientDoctorConnection(patientId, doctorId) {
+  const profile = await PatientProfile.findOne({
+    userId: patientId,
+    connectedDoctorIds: doctorId
+  })
+    .select('_id')
+    .lean();
+
+  if (!profile) {
+    const error = new Error('Patient is not connected to this doctor');
+    error.statusCode = 403;
+    throw error;
+  }
+}
+
+async function ensureConversationAccessAllowed(conversation, requester) {
+  if (requester.role === 'admin') {
+    return;
+  }
+
+  const participantIds = (conversation.participantIds || []).map((value) => String(value));
+  if (!participantIds.includes(String(requester.id))) {
+    const error = new Error('Conversation not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (participantIds.length !== 2) {
+    return;
+  }
+
+  const participants = await User.find({ _id: { $in: participantIds }, isActive: true })
+    .select('_id role')
+    .lean();
+
+  if (participants.length !== 2) {
+    const error = new Error('Conversation participants are invalid');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const patient = participants.find((item) => item.role === 'patient');
+  const doctor = participants.find((item) => item.role === 'doctor');
+
+  if (patient && doctor) {
+    await ensurePatientDoctorConnection(String(patient._id), String(doctor._id));
+    return;
+  }
+
+  const error = new Error('Conversation type is not allowed');
+  error.statusCode = 403;
+  throw error;
+}
+
+async function createOrGetConversation(req, res, next) {
+  try {
+    const requester = { id: req.user.id, role: req.user.role };
+    const { toUserId } = req.body;
+
+    if (String(toUserId) === String(requester.id)) {
+      const error = new Error('Cannot create conversation with yourself');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const targetUser = await User.findOne({ _id: toUserId, isActive: true })
+      .select('_id fullName email role')
+      .lean();
+
+    if (!targetUser) {
+      const error = new Error('Target user not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (requester.role !== 'admin') {
+      const patientId = requester.role === 'patient' ? requester.id : targetUser.role === 'patient' ? String(targetUser._id) : null;
+      const doctorId = requester.role === 'doctor' ? requester.id : targetUser.role === 'doctor' ? String(targetUser._id) : null;
+
+      if (!patientId || !doctorId) {
+        const error = new Error('Only patient-doctor conversations are allowed');
+        error.statusCode = 403;
+        throw error;
+      }
+
+      await ensurePatientDoctorConnection(patientId, doctorId);
+    }
+
+    let conversation = await Conversation.findOne({
+      $and: [
+        { participantIds: { $all: [requester.id, toUserId] } },
+        { participantIds: { $size: 2 } }
+      ]
+    });
+
+    if (!conversation) {
+      conversation = await Conversation.create({
+        participantIds: [requester.id, toUserId],
+        lastMessageAt: new Date()
+      });
+    }
+
+    await ensureConversationAccessAllowed(conversation, requester);
+
+    const populatedConversation = await Conversation.findById(conversation._id)
+      .populate('participantIds', 'fullName email role')
+      .lean();
+
+    res.status(201).json({
+      success: true,
+      message: 'Conversation ready',
+      data: { conversation: populatedConversation }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
 
 async function getMyConversations(req, res, next) {
   try {
@@ -29,13 +149,18 @@ async function getConversationMessages(req, res, next) {
     const conversation = await Conversation.findOne({
       _id: conversationId,
       participantIds: userId
-    }).lean();
+    });
 
     if (!conversation) {
       const error = new Error('Conversation not found');
       error.statusCode = 404;
       throw error;
     }
+
+    await ensureConversationAccessAllowed(conversation, {
+      id: userId,
+      role: req.user.role
+    });
 
     const messages = await Message.find({ conversationId })
       .sort({ createdAt: 1 })
@@ -76,6 +201,11 @@ async function sendMessage(req, res, next) {
       error.statusCode = 404;
       throw error;
     }
+
+    await ensureConversationAccessAllowed(conversation, {
+      id: userId,
+      role: req.user.role
+    });
 
     const message = await Message.create({
       conversationId,
@@ -141,6 +271,7 @@ async function sendMessage(req, res, next) {
 }
 
 module.exports = {
+  createOrGetConversation,
   getMyConversations,
   getConversationMessages,
   sendMessage

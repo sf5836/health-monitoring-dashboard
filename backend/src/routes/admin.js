@@ -6,8 +6,11 @@ const validate = require('../middleware/validate');
 const { adminActionLimiter } = require('../middleware/rateLimiter');
 const {
 	doctorIdParamsSchema,
+	patientIdParamsSchema,
 	blogIdParamsSchema,
 	doctorDecisionSchema,
+	adminUpdateDoctorSchema,
+	adminUpdatePatientSchema,
 	blogRejectSchema,
 	adminCreateBlogSchema,
 	adminUpdateBlogSchema
@@ -21,6 +24,16 @@ router.use(adminActionLimiter);
 router.get('/dashboard', adminController.getDashboard);
 
 router.get('/doctors', adminController.getDoctors);
+router.patch(
+	'/doctors/:doctorId',
+	validate({ params: doctorIdParamsSchema, body: adminUpdateDoctorSchema }),
+	adminController.updateDoctor
+);
+router.delete(
+	'/doctors/:doctorId',
+	validate({ params: doctorIdParamsSchema }),
+	adminController.deleteDoctor
+);
 router.get('/doctors/pending', adminController.getPendingDoctors);
 router.post(
 	'/doctors/:doctorId/approve',
@@ -37,9 +50,27 @@ router.post(
 	validate({ params: doctorIdParamsSchema, body: doctorDecisionSchema }),
 	adminController.suspendDoctor
 );
+router.get('/patients', adminController.getPatients);
+router.patch(
+	'/patients/:patientId',
+	validate({ params: patientIdParamsSchema, body: adminUpdatePatientSchema }),
+	adminController.updatePatient
+);
+router.delete(
+	'/patients/:patientId',
+	validate({ params: patientIdParamsSchema }),
+	adminController.deletePatient
+);
+router.get('/appointments', adminController.getAppointments);
+router.get('/activity/recent', adminController.getRecentActivity);
 
 router.get('/blogs', adminController.getBlogs);
 router.get('/blogs/pending', adminController.getPendingBlogs);
+router.delete(
+	'/blogs/:blogId',
+	validate({ params: blogIdParamsSchema }),
+	adminController.deleteBlog
+);
 router.post(
 	'/blogs/:blogId/publish',
 	validate({ params: blogIdParamsSchema }),
@@ -60,5 +91,6 @@ router.patch(
 router.get('/analytics/overview', adminController.getAnalyticsOverview);
 router.get('/analytics/growth', adminController.getAnalyticsGrowth);
 router.get('/analytics/blogs', adminController.getAnalyticsBlogs);
+router.get('/analytics/performance', adminController.getAnalyticsPerformance);
 
 module.exports = router;

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ROUTE_PATHS } from '../../routes/routePaths';
 import { sessionStore } from '../../services/sessionStore';
+import { expireCurrentSession } from '../../services/authSession';
 import {
   getCurrentUser,
   getMyNotifications,
@@ -31,12 +32,17 @@ const NAV_ITEMS: NavItem[] = [
 
 export default function PatientLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [fullName, setFullName] = useState(sessionStore.getFullName() || 'Patient User');
   const [notifications, setNotifications] = useState<PortalNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [messageCount, setMessageCount] = useState(0);
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  function handleSidebarToggle() {
+    setIsMobileSidebarOpen((previous) => !previous);
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -153,7 +159,27 @@ export default function PatientLayout() {
     if (location.pathname === ROUTE_PATHS.patient.messages) {
       setMessageCount(0);
     }
+
+    if (isMobileSidebarOpen) {
+      setIsMobileSidebarOpen(false);
+    }
   }, [location.pathname]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 980px)');
+
+    const handleViewportChange = () => {
+      if (!mediaQuery.matches) {
+        setIsMobileSidebarOpen(false);
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleViewportChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleViewportChange);
+    };
+  }, []);
 
   const currentSection = useMemo(() => {
     const match = NAV_ITEMS.find((item) => location.pathname.startsWith(item.path));
@@ -182,17 +208,15 @@ export default function PatientLayout() {
     }
   }
 
+  async function handleLogout() {
+    await expireCurrentSession();
+    navigate(ROUTE_PATHS.public.home, { replace: true });
+  }
+
   return (
-    <div className={`patient-shell ${isSidebarExpanded ? '' : 'is-sidebar-collapsed'}`}>
+    <div className={`patient-shell ${isMobileSidebarOpen ? 'is-mobile-sidebar-open' : ''}`}>
       <aside className="patient-sidebar">
         <div className="patient-sidebar-top">
-          <button
-            type="button"
-            className="patient-sidebar-toggle"
-            onClick={() => setIsSidebarExpanded((previous) => !previous)}
-          >
-            {isSidebarExpanded ? 'Collapse' : 'Expand'}
-          </button>
           <p className="patient-sidebar-brand">HM Pro</p>
         </div>
 
@@ -228,6 +252,13 @@ export default function PatientLayout() {
         </div>
       </aside>
 
+      <button
+        type="button"
+        className="patient-sidebar-overlay"
+        aria-label="Close sidebar"
+        onClick={() => setIsMobileSidebarOpen(false)}
+      />
+
       <div className="patient-main">
         <header className="patient-topbar">
           <div>
@@ -236,6 +267,24 @@ export default function PatientLayout() {
           </div>
 
           <div className="patient-topbar-actions">
+            <button
+              type="button"
+              className="patient-secondary-button"
+              onClick={() => navigate(ROUTE_PATHS.public.home)}
+            >
+              Back to Website
+            </button>
+            <button type="button" className="patient-secondary-button" onClick={handleLogout}>
+              Logout
+            </button>
+            <button
+              type="button"
+              className="patient-sidebar-mobile-toggle"
+              aria-label="Toggle sidebar navigation"
+              onClick={handleSidebarToggle}
+            >
+              {isMobileSidebarOpen ? 'Close Menu' : 'Menu'}
+            </button>
             <button
               type="button"
               className="patient-notification-button"

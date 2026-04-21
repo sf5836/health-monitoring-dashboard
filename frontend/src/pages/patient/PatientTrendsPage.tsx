@@ -5,10 +5,17 @@ import { getPatientTrends, type PortalVitalRecord } from '../../services/patient
 import { formatDate, riskClass, riskLabel } from './patientUi';
 
 type MetricKey = 'bloodPressure' | 'heartRate' | 'glucose' | 'weightKg' | 'spo2' | 'temperatureC';
+type DateRangeKey = '7d' | '30d' | '90d' | 'custom';
 
 type DataPoint = {
   x: string;
   y: number;
+};
+
+type NormalizedPoint = {
+  x: number;
+  y: number;
+  raw: DataPoint;
 };
 
 const METRICS: Array<{
@@ -20,7 +27,7 @@ const METRICS: Array<{
 }> = [
   {
     key: 'bloodPressure',
-    label: 'Blood Pressure (Systolic)',
+    label: 'Blood Pressure',
     unit: 'mmHg',
     picker: (entry) => entry.bloodPressure?.systolic,
     range: [90, 120]
@@ -61,23 +68,6 @@ const METRICS: Array<{
   }
 ];
 
-function normalizePoints(values: DataPoint[], width: number, height: number, padding: number): string {
-  if (values.length === 0) return '';
-
-  const ys = values.map((item) => item.y);
-  const min = Math.min(...ys);
-  const max = Math.max(...ys);
-  const range = max - min || 1;
-
-  return values
-    .map((item, index) => {
-      const x = padding + (index / Math.max(values.length - 1, 1)) * (width - padding * 2);
-      const y = height - padding - ((item.y - min) / range) * (height - padding * 2);
-      return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
-    })
-    .join(' ');
-}
-
 function bpPath(vitals: PortalVitalRecord[], which: 'systolic' | 'diastolic'): DataPoint[] {
   return vitals
     .map((entry) => ({
@@ -87,20 +77,69 @@ function bpPath(vitals: PortalVitalRecord[], which: 'systolic' | 'diastolic'): D
     .filter((point) => Number.isFinite(point.y));
 }
 
+function normalizeCoordinates(
+  values: DataPoint[],
+  width: number,
+  height: number,
+  padding: number
+): NormalizedPoint[] {
+  if (values.length === 0) return [];
+
+  const ys = values.map((item) => item.y);
+  const min = Math.min(...ys);
+  const max = Math.max(...ys);
+  const range = max - min || 1;
+
+  return values.map((item, index) => {
+    const x = padding + (index / Math.max(values.length - 1, 1)) * (width - padding * 2);
+    const y = height - padding - ((item.y - min) / range) * (height - padding * 2);
+
+    return {
+      x,
+      y,
+      raw: item
+    };
+  });
+}
+
+function pathFromCoordinates(points: NormalizedPoint[]): string {
+  if (points.length === 0) return '';
+
+  return points
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
+    .join(' ');
+}
+
+function rangeLabel(range: DateRangeKey): string {
+  if (range === '7d') return '7 Days';
+  if (range === '30d') return '30 Days';
+  if (range === '90d') return '3 Months';
+  return 'Custom';
+}
+
 export default function PatientTrendsPage() {
-  const [days, setDays] = useState(30);
+  const [range, setRange] = useState<DateRangeKey>('30d');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
   const [metric, setMetric] = useState<MetricKey>('bloodPressure');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [vitals, setVitals] = useState<PortalVitalRecord[]>([]);
-  const [average, setAverage] = useState<{
-    heartRate: number | null;
-    spo2: number | null;
-    temperatureC: number | null;
-    weightKg: number | null;
-    systolic: number | null;
-    diastolic: number | null;
-  } | null>(null);
+
+  const days = useMemo(() => {
+    if (range === '7d') return 7;
+    if (range === '30d') return 30;
+    if (range === '90d') return 90;
+
+    if (!customFrom || !customTo) {
+      return 30;
+    }
+
+    const from = new Date(`${customFrom}T00:00:00`).getTime();
+    const to = new Date(`${customTo}T23:59:59`).getTime();
+    const span = Math.ceil((to - from) / (1000 * 60 * 60 * 24)) + 1;
+    return Math.min(365, Math.max(1, span || 30));
+  }, [customFrom, customTo, range]);
 
   useEffect(() => {
     let cancelled = false;
@@ -110,7 +149,6 @@ export default function PatientTrendsPage() {
         const response = await getPatientTrends(days);
         if (cancelled) return;
         setVitals(response.vitals);
-        setAverage(response.average);
         setError('');
       } catch {
         if (cancelled) return;
@@ -149,13 +187,35 @@ export default function PatientTrendsPage() {
   const systolicPoints = useMemo(() => bpPath(vitals, 'systolic'), [vitals]);
   const diastolicPoints = useMemo(() => bpPath(vitals, 'diastolic'), [vitals]);
 
-  const width = 840;
-  const height = 320;
-  const padding = 24;
+  const width = 980;
+  const height = 380;
+  const padding = 30;
 
-  const linePath = normalizePoints(points, width, height, padding);
-  const systolicPath = normalizePoints(systolicPoints, width, height, padding);
-  const diastolicPath = normalizePoints(diastolicPoints, width, height, padding);
+  const normalizedMain = useMemo(
+    () => normalizeCoordinates(points, width, height, padding),
+    [height, points, width]
+  );
+  const normalizedSystolic = useMemo(
+    () => normalizeCoordinates(systolicPoints, width, height, padding),
+    [height, systolicPoints, width]
+  );
+  const normalizedDiastolic = useMemo(
+    () => normalizeCoordinates(diastolicPoints, width, height, padding),
+    [diastolicPoints, height, width]
+  );
+
+  const linePath = pathFromCoordinates(normalizedMain);
+  const systolicPath = pathFromCoordinates(normalizedSystolic);
+  const diastolicPath = pathFromCoordinates(normalizedDiastolic);
+
+  const outlierCoordinates = useMemo(() => {
+    if (!selectedMetric.range) return [];
+    const [rangeMin, rangeMax] = selectedMetric.range;
+
+    return normalizedMain.filter(
+      (point) => point.raw.y < rangeMin || point.raw.y > rangeMax
+    );
+  }, [normalizedMain, selectedMetric.range]);
 
   const statValues = useMemo(() => {
     if (points.length === 0) {
@@ -184,68 +244,105 @@ export default function PatientTrendsPage() {
   }, [points, selectedMetric]);
 
   const flaggedReadings = useMemo(
-    () => vitals.filter((entry) => entry.riskLevel !== 'normal').slice(-5).reverse(),
+    () => vitals.filter((entry) => entry.riskLevel !== 'normal').slice(-6).reverse(),
     [vitals]
   );
 
-  function renderAverageSummary() {
-    if (!average) return 'No average available.';
-
-    return `AVG HR ${average.heartRate ?? '-'} | AVG SpO2 ${average.spo2 ?? '-'} | AVG SYS ${average.systolic ?? '-'} | AVG DIA ${average.diastolic ?? '-'}`;
-  }
-
   return (
-    <section className="patient-page">
+    <section className="patient-page patient-trends-page">
       <header className="patient-page-head">
         <div>
           <h2>Health Trends</h2>
-          <p>Visualize your health patterns over time.</p>
+          <p>Visualize your health patterns over time</p>
         </div>
-        <button type="button" className="patient-secondary-button" onClick={() => window.print()}>
-          Export Chart as PDF
-        </button>
       </header>
 
       {error ? <p className="patient-error-banner">{error}</p> : null}
 
-      <section className="patient-tab-row">
-        {METRICS.map((item) => (
+      <section className="patient-trends-toolbar">
+        <div className="patient-trends-metric-tabs">
+          {METRICS.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={`patient-tab-pill ${item.key === metric ? 'is-active' : ''}`}
+              onClick={() => setMetric(item.key)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="patient-trends-range-tabs">
           <button
-            key={item.key}
             type="button"
-            className={`patient-tab-pill ${item.key === metric ? 'is-active' : ''}`}
-            onClick={() => setMetric(item.key)}
+            className={`patient-tab-pill ${range === '7d' ? 'is-active' : ''}`}
+            onClick={() => setRange('7d')}
           >
-            {item.label}
+            7 Days
           </button>
-        ))}
+          <button
+            type="button"
+            className={`patient-tab-pill ${range === '30d' ? 'is-active' : ''}`}
+            onClick={() => setRange('30d')}
+          >
+            30 Days
+          </button>
+          <button
+            type="button"
+            className={`patient-tab-pill ${range === '90d' ? 'is-active' : ''}`}
+            onClick={() => setRange('90d')}
+          >
+            3 Months
+          </button>
+          <button
+            type="button"
+            className={`patient-tab-pill ${range === 'custom' ? 'is-active' : ''}`}
+            onClick={() => setRange('custom')}
+          >
+            Custom
+          </button>
+        </div>
       </section>
 
-      <section className="patient-tab-row">
-        {[7, 30, 90].map((range) => (
-          <button
-            key={range}
-            type="button"
-            className={`patient-tab-pill ${range === days ? 'is-active' : ''}`}
-            onClick={() => setDays(range)}
-          >
-            {range} Days
-          </button>
-        ))}
-      </section>
+      {range === 'custom' ? (
+        <section className="patient-trends-custom-range patient-card">
+          <label>
+            From
+            <input type="date" value={customFrom} onChange={(event) => setCustomFrom(event.target.value)} />
+          </label>
+          <label>
+            To
+            <input type="date" value={customTo} onChange={(event) => setCustomTo(event.target.value)} />
+          </label>
+        </section>
+      ) : null}
 
-      <article className="patient-card">
-        <h3>
-          {selectedMetric.label} - Last {days} Days
-        </h3>
+      <article className="patient-card patient-trends-chart-card">
+        <div className="patient-card-head">
+          <h3>
+            {selectedMetric.label} - Last {rangeLabel(range)}
+          </h3>
+          <button type="button" className="patient-secondary-button" onClick={() => window.print()}>
+            Export Chart as PDF
+          </button>
+        </div>
+
         {loading ? (
           <p className="patient-page-status">Loading trend chart...</p>
         ) : (
           <svg className="patient-trend-chart" viewBox={`0 0 ${width} ${height}`}>
             <rect x="0" y="0" width={width} height={height} fill="#ffffff" />
             {selectedMetric.range ? (
-              <rect x={padding} y={height * 0.24} width={width - padding * 2} height={height * 0.28} fill="rgba(45, 196, 141, 0.12)" />
+              <rect
+                x={padding}
+                y={height * 0.22}
+                width={width - padding * 2}
+                height={height * 0.32}
+                fill="rgba(45, 196, 141, 0.12)"
+              />
             ) : null}
+
             <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} className="patient-axis" />
             <line x1={padding} y1={padding} x2={padding} y2={height - padding} className="patient-axis" />
 
@@ -257,10 +354,12 @@ export default function PatientTrendsPage() {
             ) : (
               <path d={linePath} className="patient-trend-line" />
             )}
+
+            {outlierCoordinates.map((point) => (
+              <circle key={`${point.raw.x}-${point.raw.y}`} cx={point.x} cy={point.y} r="4" fill="#ef4444" />
+            ))}
           </svg>
         )}
-
-        <p className="patient-micro-copy">{renderAverageSummary()}</p>
       </article>
 
       <section className="patient-grid patient-summary-grid">
@@ -282,17 +381,15 @@ export default function PatientTrendsPage() {
         </article>
       </section>
 
-      <article className="patient-card">
-        <div className="patient-card-head">
-          <h3>Flagged Readings</h3>
-          <Link to={ROUTE_PATHS.patient.vitals} className="patient-link-button">
-            View in Vitals History
-          </Link>
-        </div>
+      {flaggedReadings.length > 0 ? (
+        <article className="patient-card patient-flagged-card">
+          <div className="patient-card-head">
+            <h3>{flaggedReadings.length} Flagged Readings</h3>
+            <Link to={ROUTE_PATHS.patient.vitals} className="patient-link-button">
+              View in Vitals History
+            </Link>
+          </div>
 
-        {flaggedReadings.length === 0 ? (
-          <p className="patient-empty-state">No flagged readings in this range.</p>
-        ) : (
           <ul className="patient-list">
             {flaggedReadings.map((entry) => (
               <li key={entry.id} className="patient-list-item">
@@ -306,8 +403,8 @@ export default function PatientTrendsPage() {
               </li>
             ))}
           </ul>
-        )}
-      </article>
+        </article>
+      ) : null}
     </section>
   );
 }

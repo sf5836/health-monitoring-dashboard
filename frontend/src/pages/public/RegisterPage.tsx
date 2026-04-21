@@ -5,7 +5,6 @@ import { ApiError, apiRequest } from '../../services/apiClient';
 import { sessionStore } from '../../services/sessionStore';
 
 type Role = 'patient' | 'doctor';
-type Step = 1 | 2;
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -28,27 +27,9 @@ function getPasswordStrength(password: string): { score: 0 | 1 | 2 | 3 | 4 | 5; 
   return { score: 5, label: 'Very Strong' };
 }
 
-function StepIndicator({ step, labels }: Readonly<{ step: Step; labels: string[] }>) {
-  return (
-    <div className="hm-reg-steps" role="list" aria-label="Registration steps">
-      {labels.map((label, index) => {
-        const itemStep = (index + 1) as Step;
-        const stateClass = itemStep < step ? 'done' : itemStep === step ? 'active' : 'idle';
-        return (
-          <div key={label} className={`hm-reg-step ${stateClass}`} role="listitem">
-            <span className="hm-reg-step-dot">{index + 1}</span>
-            <span>{label}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [role, setRole] = useState<Role>('patient');
-  const [step, setStep] = useState<Step>(1);
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -57,53 +38,17 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const [specialization, setSpecialization] = useState('');
-  const [licenseNumber, setLicenseNumber] = useState('');
-  const [doctorQualifications, setDoctorQualifications] = useState<string[]>(['']);
-  const [experienceYears, setExperienceYears] = useState('');
-  const [hospital, setHospital] = useState('');
-  const [fee, setFee] = useState('');
-  const [bio, setBio] = useState('');
-  const [availability, setAvailability] = useState('');
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
-  const stepLabels = role === 'doctor' ? ['Personal Info', 'Professional Info'] : ['Personal Info'];
-  const isDoctorProfessionalStep = role === 'doctor' && step === 2;
 
   const emailStatus = useMemo(() => {
     if (!email.trim()) return 'Enter email';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Invalid format';
     return 'Format looks good';
   }, [email]);
-
-  function updateQualification(index: number, value: string) {
-    setDoctorQualifications((current) =>
-      current.map((item, currentIndex) => (currentIndex === index ? value : item))
-    );
-  }
-
-  function addQualificationRow() {
-    setDoctorQualifications((current) => [...current, '']);
-  }
-
-  function nextStep() {
-    if (role !== 'doctor') return;
-
-    if (!validatePersonalStep()) {
-      return;
-    }
-
-    setErrorMessage('');
-    setStep(2);
-  }
-
-  function backStep() {
-    setStep(1);
-  }
 
   function validatePersonalStep() {
     if (!firstName.trim() || !lastName.trim()) {
@@ -127,38 +72,12 @@ export default function RegisterPage() {
     }
 
     if (passwordStrength.score < 3) {
-      setErrorMessage(
-        'Use a stronger password with uppercase, lowercase, number, and symbol.'
-      );
+      setErrorMessage('Use a stronger password with uppercase, lowercase, number, and symbol.');
       return false;
     }
 
     if (password !== confirmPassword) {
       setErrorMessage('Password and confirm password must match.');
-      return false;
-    }
-
-    return true;
-  }
-
-  function validateDoctorProfessionalStep() {
-    if (!specialization.trim()) {
-      setErrorMessage('Specialization is required for doctor registration.');
-      return false;
-    }
-
-    if (!licenseNumber.trim()) {
-      setErrorMessage('License number is required for doctor registration.');
-      return false;
-    }
-
-    if (experienceYears.trim() && (Number.isNaN(Number(experienceYears)) || Number(experienceYears) < 0)) {
-      setErrorMessage('Experience years must be a valid non-negative number.');
-      return false;
-    }
-
-    if (fee.trim() && (Number.isNaN(Number(fee)) || Number(fee) < 0)) {
-      setErrorMessage('Consultation fee must be a valid non-negative number.');
       return false;
     }
 
@@ -174,51 +93,12 @@ export default function RegisterPage() {
       return;
     }
 
-    if (role === 'doctor' && step === 1) {
-      nextStep();
-      return;
-    }
-
-    if (role === 'doctor' && !validateDoctorProfessionalStep()) {
-      return;
-    }
-
     const payload: Record<string, unknown> = {
       fullName: `${firstName.trim()} ${lastName.trim()}`.trim(),
       email: email.trim(),
       phone: phone.trim() || undefined,
       password
     };
-
-    if (role === 'doctor') {
-      payload.specialization = specialization.trim();
-      payload.licenseNumber = licenseNumber.trim();
-
-      const cleanedQualifications = doctorQualifications.map((item) => item.trim()).filter(Boolean);
-      if (cleanedQualifications.length > 0) {
-        payload.qualifications = cleanedQualifications;
-      }
-
-      if (experienceYears.trim()) {
-        payload.experienceYears = Number(experienceYears);
-      }
-
-      if (hospital.trim()) {
-        payload.hospital = hospital.trim();
-      }
-
-      if (fee.trim()) {
-        payload.fee = Number(fee);
-      }
-
-      if (bio.trim()) {
-        payload.bio = bio.trim();
-      }
-
-      if (availability.trim()) {
-        payload.availability = availability.trim();
-      }
-    }
 
     try {
       setIsSubmitting(true);
@@ -234,6 +114,8 @@ export default function RegisterPage() {
         body: JSON.stringify(payload)
       });
 
+      const registeredRole = response?.data?.user?.role ?? role;
+
       if (response?.data?.accessToken && response?.data?.refreshToken) {
         sessionStore.setTokens(response.data.accessToken, response.data.refreshToken);
       }
@@ -241,18 +123,16 @@ export default function RegisterPage() {
         sessionStore.setRole(response.data.user.role);
       }
 
-      const registeredRole = response?.data?.user?.role ?? role;
-
       setSuccessMessage(
         response?.message ||
           (role === 'doctor'
-            ? 'Doctor registered. Approval is pending.'
+            ? 'Account created. Please complete your professional profile next.'
             : 'Patient registered successfully.')
       );
 
       window.setTimeout(() => {
         if (registeredRole === 'doctor') {
-          navigate(ROUTE_PATHS.doctor.pendingApproval);
+          navigate(ROUTE_PATHS.doctor.onboarding);
           return;
         }
 
@@ -280,193 +160,6 @@ export default function RegisterPage() {
     }
   }
 
-  function renderPatientFields() {
-    return (
-      <>
-        <div className="hm-reg-grid-2">
-          <label>
-            First Name
-            <input
-              type="text"
-              placeholder="First name"
-              value={firstName}
-              onChange={(event) => setFirstName(event.target.value)}
-              required
-            />
-          </label>
-          <label>
-            Last Name
-            <input
-              type="text"
-              placeholder="Last name"
-              value={lastName}
-              onChange={(event) => setLastName(event.target.value)}
-              required
-            />
-          </label>
-        </div>
-
-        <label>
-          Email Address
-          <input
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-          <span className={`hm-reg-status ${emailStatus === 'Format looks good' ? 'ok' : 'warn'}`}>{emailStatus}</span>
-        </label>
-
-        <label>
-          Phone Number (Optional)
-          <input
-            type="tel"
-            placeholder="03xx xxxxxxx"
-            value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-          />
-        </label>
-
-        <label>
-          Password
-          <input
-            type="password"
-            placeholder="Create password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-          <div className="hm-reg-strength-wrap" aria-label="Password strength">
-            <div className={`hm-reg-strength-bar level-${passwordStrength.score}`} />
-          </div>
-          <span className={`hm-reg-help hm-reg-help-strength level-${passwordStrength.score}`}>
-            Strength: {passwordStrength.label}
-          </span>
-        </label>
-
-        <label>
-          Confirm Password
-          <input
-            type="password"
-            placeholder="Confirm password"
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-            required
-          />
-        </label>
-      </>
-    );
-  }
-
-  function renderDoctorPersonalFields() {
-    return renderPatientFields();
-  }
-
-  function renderDoctorProfessionalFields() {
-    return (
-      <>
-        <button type="button" className="hm-reg-back" onClick={backStep}>
-          {'<- Back'}
-        </button>
-
-        <label>
-          Specialization
-          <input
-            type="text"
-            placeholder="Cardiology"
-            value={specialization}
-            onChange={(event) => setSpecialization(event.target.value)}
-            required
-          />
-        </label>
-
-        <label>
-          License Number
-          <input
-            type="text"
-            placeholder="PMDC-XXXX-1234"
-            value={licenseNumber}
-            onChange={(event) => setLicenseNumber(event.target.value)}
-            required
-          />
-        </label>
-
-        <div className="hm-reg-grid-2">
-          <label>
-            Experience (years)
-            <input
-              type="number"
-              min="0"
-              placeholder="8"
-              value={experienceYears}
-              onChange={(event) => setExperienceYears(event.target.value)}
-            />
-          </label>
-
-          <label>
-            Consultation Fee (PKR)
-            <input
-              type="number"
-              min="0"
-              placeholder="1500"
-              value={fee}
-              onChange={(event) => setFee(event.target.value)}
-            />
-          </label>
-        </div>
-
-        <label>
-          Hospital / Clinic
-          <input
-            type="text"
-            placeholder="Hospital name"
-            value={hospital}
-            onChange={(event) => setHospital(event.target.value)}
-          />
-        </label>
-
-        <div className="hm-reg-qualifications">
-          <span className="hm-reg-label">Qualifications</span>
-          {doctorQualifications.map((qualification, index) => (
-            <input
-              key={`qualification-${index}`}
-              type="text"
-              placeholder={`Qualification ${index + 1}`}
-              value={qualification}
-              onChange={(event) => updateQualification(index, event.target.value)}
-            />
-          ))}
-          <button type="button" className="hm-reg-ghost" onClick={addQualificationRow}>
-            + Add Qualification
-          </button>
-        </div>
-
-        <label>
-          Bio
-          <textarea
-            rows={4}
-            maxLength={500}
-            value={bio}
-            onChange={(event) => setBio(event.target.value)}
-            placeholder="Write a short professional bio"
-          />
-          <span className="hm-reg-help">{bio.length}/500</span>
-        </label>
-
-        <label>
-          Availability (Optional)
-          <textarea
-            rows={3}
-            placeholder="Mon-Fri: 9:00-17:00"
-            value={availability}
-            onChange={(event) => setAvailability(event.target.value)}
-          />
-        </label>
-      </>
-    );
-  }
-
   return (
     <div className="hm-register-page-wrap">
       <div className="hm-register-page">
@@ -479,7 +172,7 @@ export default function RegisterPage() {
               HealthMonitor Pro
             </a>
             <h1>Join HealthMonitor Pro</h1>
-            <p className="hm-register-subtitle">Monitor your health, connect with experts</p>
+            <p className="hm-register-subtitle">Create your secure account in under two minutes.</p>
 
             <div className="hm-register-metrics" aria-hidden="true">
               <div>
@@ -521,18 +214,16 @@ export default function RegisterPage() {
             <ul className="hm-register-benefits">
               <li>Secure and encrypted health data</li>
               <li>500+ verified specialist doctors</li>
-              <li>Real-time health monitoring</li>
+              <li>Professional onboarding for doctor accounts</li>
             </ul>
           </div>
         </section>
 
         <section className="hm-register-right">
           <div className="hm-reg-surface">
-            <StepIndicator step={step} labels={stepLabels} />
             <h2>Create your account</h2>
             <p className="hm-reg-intro">
-              We collect only essential registration data now. Additional profile details can be completed
-              after signup.
+              Doctors register personal details first, then complete professional profile on the next page.
             </p>
 
             <div className="hm-reg-role-row" role="tablist" aria-label="Role selector">
@@ -541,7 +232,6 @@ export default function RegisterPage() {
                 className={`hm-reg-role ${role === 'patient' ? 'active' : ''}`}
                 onClick={() => {
                   setRole('patient');
-                  setStep(1);
                   setErrorMessage('');
                   setSuccessMessage('');
                 }}
@@ -554,13 +244,12 @@ export default function RegisterPage() {
                 className={`hm-reg-role ${role === 'doctor' ? 'active' : ''}`}
                 onClick={() => {
                   setRole('doctor');
-                  setStep(1);
                   setErrorMessage('');
                   setSuccessMessage('');
                 }}
               >
                 <span className="hm-reg-role-copy">I am a Doctor</span>
-                <span className="hm-reg-role-mini">Requires approval</span>
+                <span className="hm-reg-role-mini">Professional onboarding next</span>
               </button>
             </div>
 
@@ -568,44 +257,88 @@ export default function RegisterPage() {
             {successMessage ? <p className="hm-reg-alert hm-reg-alert-success">{successMessage}</p> : null}
 
             <form className="hm-reg-form" onSubmit={onSubmit}>
-              <div className="hm-reg-section-heading">
-                <p>
-                  {role === 'patient'
-                    ? 'Patient account details'
-                    : isDoctorProfessionalStep
-                      ? 'Doctor professional details'
-                      : 'Doctor personal details'}
-                </p>
-                <span className="hm-reg-meta">
-                  {role === 'patient'
-                    ? 'Required: fullName, email, password'
-                    : isDoctorProfessionalStep
-                      ? 'Required: specialization, licenseNumber'
-                      : 'Required: fullName, email, password'}
+              <div className="hm-reg-grid-2">
+                <label>
+                  First Name
+                  <input
+                    type="text"
+                    placeholder="First name"
+                    value={firstName}
+                    onChange={(event) => setFirstName(event.target.value)}
+                    required
+                  />
+                </label>
+                <label>
+                  Last Name
+                  <input
+                    type="text"
+                    placeholder="Last name"
+                    value={lastName}
+                    onChange={(event) => setLastName(event.target.value)}
+                    required
+                  />
+                </label>
+              </div>
+
+              <label>
+                Email Address
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                />
+                <span className={`hm-reg-status ${emailStatus === 'Format looks good' ? 'ok' : 'warn'}`}>
+                  {emailStatus}
                 </span>
-              </div>
+              </label>
 
-              {role === 'patient'
-                ? renderPatientFields()
-                : step === 1
-                  ? renderDoctorPersonalFields()
-                  : renderDoctorProfessionalFields()}
+              <label>
+                Phone Number (Optional)
+                <input
+                  type="tel"
+                  placeholder="03xx xxxxxxx"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                />
+              </label>
 
-              <div className="hm-reg-actions">
-                {role === 'doctor' && step === 1 ? (
-                  <button type="button" className="hm-reg-primary" onClick={nextStep}>
-                    Next Step &rarr;
-                  </button>
-                ) : (
-                  <button type="submit" className="hm-reg-primary" disabled={isSubmitting}>
-                    {isSubmitting
-                      ? 'Submitting...'
-                      : role === 'doctor'
-                        ? 'Submit Doctor Application'
-                        : 'Create Patient Account'}
-                  </button>
-                )}
-              </div>
+              <label>
+                Password
+                <input
+                  type="password"
+                  placeholder="Create password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                />
+                <div className="hm-reg-strength-wrap" aria-label="Password strength">
+                  <div className={`hm-reg-strength-bar level-${passwordStrength.score}`} />
+                </div>
+                <span className={`hm-reg-help hm-reg-help-strength level-${passwordStrength.score}`}>
+                  Strength: {passwordStrength.label}
+                </span>
+              </label>
+
+              <label>
+                Confirm Password
+                <input
+                  type="password"
+                  placeholder="Confirm password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  required
+                />
+              </label>
+
+              <button type="submit" className="hm-reg-primary" disabled={isSubmitting}>
+                {isSubmitting
+                  ? 'Submitting...'
+                  : role === 'doctor'
+                    ? 'Continue To Professional Setup'
+                    : 'Create Patient Account'}
+              </button>
             </form>
 
             <p className="hm-reg-login-link">
@@ -760,6 +493,7 @@ export default function RegisterPage() {
           gap: 0.7rem;
           box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), 0 14px 30px rgba(0, 0, 0, 0.14);
           animation: hmFloat 5.6s ease-in-out infinite;
+          overflow: hidden;
         }
 
         .hm-register-graphic-top {
@@ -796,6 +530,7 @@ export default function RegisterPage() {
           background: rgba(255, 255, 255, 0.1);
           padding: 0.65rem;
           min-height: 68px;
+          overflow: hidden;
         }
 
         .hm-register-graphic-card-wide {
@@ -858,6 +593,7 @@ export default function RegisterPage() {
         .hm-register-benefits {
           margin: 0.45rem 0 0;
           padding-left: 0;
+          list-style: none;
           display: grid;
           gap: 0.68rem;
         }
@@ -871,7 +607,7 @@ export default function RegisterPage() {
         }
 
         .hm-register-benefits li::before {
-          content: 'check';
+          content: 'v';
           width: 20px;
           height: 20px;
           border-radius: 999px;
@@ -882,6 +618,8 @@ export default function RegisterPage() {
           flex-shrink: 0;
           font-weight: 800;
           color: #b6f1dd;
+          font-size: 0.7rem;
+          line-height: 1;
         }
 
         .hm-register-right {
@@ -900,7 +638,7 @@ export default function RegisterPage() {
           border: 1px solid #e5e7eb;
           border-radius: 14px;
           box-shadow: 0 12px 26px rgba(13, 92, 69, 0.08);
-          padding: 0.9rem 0.9rem;
+          padding: 0.9rem;
         }
 
         .hm-register-right h2 {
@@ -908,47 +646,6 @@ export default function RegisterPage() {
           font-family: 'Sora', sans-serif;
           font-size: 1.58rem;
           color: #111827;
-        }
-
-        .hm-reg-steps {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 0.55rem;
-        }
-
-        .hm-reg-step {
-          display: flex;
-          align-items: center;
-          gap: 0.45rem;
-          border-radius: 999px;
-          border: 1px solid #d1d5db;
-          padding: 0.34rem 0.5rem;
-          color: #4b5563;
-          font-size: 0.78rem;
-          font-weight: 600;
-          transition: all 0.2s ease;
-        }
-
-        .hm-reg-step-dot {
-          width: 1.22rem;
-          height: 1.22rem;
-          border-radius: 999px;
-          display: inline-grid;
-          place-items: center;
-          background: #e5e7eb;
-        }
-
-        .hm-reg-step.active,
-        .hm-reg-step.done {
-          border-color: #0d5c45;
-          color: #0d5c45;
-          background: #e8f9f2;
-        }
-
-        .hm-reg-step.active .hm-reg-step-dot,
-        .hm-reg-step.done .hm-reg-step-dot {
-          background: #0d5c45;
-          color: #ffffff;
         }
 
         .hm-reg-intro {
@@ -1024,30 +721,7 @@ export default function RegisterPage() {
           background: #ffffff;
         }
 
-        .hm-reg-section-heading {
-          display: grid;
-          gap: 0.18rem;
-          padding: 0.5rem 0.62rem;
-          border-radius: 10px;
-          border: 1px solid #dbe5e1;
-          background: #f7fcf9;
-        }
-
-        .hm-reg-section-heading p {
-          margin: 0;
-          font-size: 0.84rem;
-          font-weight: 800;
-          color: #0d5c45;
-        }
-
-        .hm-reg-meta {
-          font-size: 0.72rem;
-          color: #4b5563;
-          font-weight: 600;
-        }
-
-        .hm-reg-form label,
-        .hm-reg-label {
+        .hm-reg-form label {
           display: grid;
           gap: 0.22rem;
           color: #111827;
@@ -1067,11 +741,6 @@ export default function RegisterPage() {
           color: #111827;
           background: #ffffff;
           transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .hm-reg-form textarea {
-          min-height: 78px;
-          resize: vertical;
         }
 
         .hm-reg-form input:focus,
@@ -1159,38 +828,6 @@ export default function RegisterPage() {
         .hm-reg-help-strength.level-4,
         .hm-reg-help-strength.level-5 {
           color: #0f766e;
-        }
-
-        .hm-reg-qualifications {
-          display: grid;
-          gap: 0.45rem;
-        }
-
-        .hm-reg-ghost {
-          width: fit-content;
-          border: 1px solid #0d5c45;
-          color: #0d5c45;
-          background: #ffffff;
-          border-radius: 8px;
-          padding: 0.4rem 0.62rem;
-          cursor: pointer;
-          font-weight: 700;
-          font-size: 0.82rem;
-        }
-
-        .hm-reg-back {
-          width: fit-content;
-          border: 0;
-          background: transparent;
-          color: #0d5c45;
-          padding: 0;
-          font-weight: 700;
-          cursor: pointer;
-          font-size: 0.84rem;
-        }
-
-        .hm-reg-actions {
-          margin-top: 0.22rem;
         }
 
         .hm-reg-primary {
@@ -1294,8 +931,7 @@ export default function RegisterPage() {
 
         @media (max-width: 760px) {
           .hm-reg-grid-2,
-          .hm-reg-role-row,
-          .hm-reg-steps {
+          .hm-reg-role-row {
             grid-template-columns: 1fr;
           }
 

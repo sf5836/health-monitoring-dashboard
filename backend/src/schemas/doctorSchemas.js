@@ -64,12 +64,34 @@ const updateDoctorProfileSchema = z
     fullName: z.string().min(2).optional(),
     phone: z.string().min(5).optional(),
     specialization: z.string().optional(),
+    licenseNumber: z.string().min(2).optional(),
     qualifications: z.array(z.string()).optional(),
     experienceYears: z.number().int().nonnegative().optional(),
     hospital: z.string().optional(),
     fee: z.number().nonnegative().optional(),
     bio: z.string().optional(),
-    availability: z.string().optional()
+    availability: z.string().optional(),
+    availabilitySchedule: z
+      .array(
+        z.object({
+          day: z.enum(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']),
+          startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
+          endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/)
+        })
+      )
+      .optional(),
+    legalDocuments: z
+      .array(
+        z.object({
+          label: z.string().min(1).max(80).optional(),
+          fileName: z.string().min(3),
+          contentType: z
+            .string()
+            .refine((value) => String(value).toLowerCase().includes('pdf'), 'Document must be PDF format'),
+          dataBase64: z.string().min(16)
+        })
+      )
+      .optional()
   })
   .refine((payload) => Object.keys(payload).length > 0, {
     message: 'At least one field is required'

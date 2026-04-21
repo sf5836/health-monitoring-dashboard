@@ -29,6 +29,20 @@ type VitalFormState = {
   notes: string;
 };
 
+type SortKey =
+  | 'datetime'
+  | 'bloodPressure'
+  | 'heartRate'
+  | 'spo2'
+  | 'glucose'
+  | 'weightKg'
+  | 'temperatureC'
+  | 'risk';
+
+type SortDirection = 'asc' | 'desc';
+
+const PAGE_SIZE = 15;
+
 const emptyFormState: VitalFormState = {
   datetime: toLocalDatetimeInput(new Date().toISOString()),
   systolic: '',
@@ -92,6 +106,32 @@ function mapRecordToForm(record: PortalVitalRecord): VitalFormState {
   };
 }
 
+function sortValue(record: PortalVitalRecord, key: SortKey): number {
+  if (key === 'datetime') {
+    return new Date(record.datetime).getTime();
+  }
+
+  if (key === 'bloodPressure') {
+    const systolic = record.bloodPressure?.systolic || 0;
+    const diastolic = record.bloodPressure?.diastolic || 0;
+    return systolic * 1000 + diastolic;
+  }
+
+  if (key === 'heartRate') return record.heartRate || 0;
+  if (key === 'spo2') return record.spo2 || 0;
+  if (key === 'glucose') return record.glucose?.value || 0;
+  if (key === 'weightKg') return record.weightKg || 0;
+  if (key === 'temperatureC') return record.temperatureC || 0;
+
+  const riskWeight: Record<PortalVitalRecord['riskLevel'], number> = {
+    normal: 1,
+    medium: 2,
+    high: 3
+  };
+
+  return riskWeight[record.riskLevel] || 0;
+}
+
 export default function PatientVitalsPage() {
   const [vitals, setVitals] = useState<PortalVitalRecord[]>([]);
   const [form, setForm] = useState<VitalFormState>(emptyFormState);
@@ -100,6 +140,11 @@ export default function PatientVitalsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('datetime');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [page, setPage] = useState(1);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -126,10 +171,55 @@ export default function PatientVitalsPage() {
     };
   }, []);
 
-  const sortedVitals = useMemo(
-    () => [...vitals].sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime()),
-    [vitals]
-  );
+  const filteredVitals = useMemo(() => {
+    return vitals.filter((record) => {
+      const timestamp = new Date(record.datetime).getTime();
+
+      if (fromDate) {
+        const fromTimestamp = new Date(`${fromDate}T00:00:00`).getTime();
+        if (timestamp < fromTimestamp) return false;
+      }
+
+      if (toDate) {
+        const toTimestamp = new Date(`${toDate}T23:59:59`).getTime();
+        if (timestamp > toTimestamp) return false;
+      }
+
+      return true;
+    });
+  }, [fromDate, toDate, vitals]);
+
+  const sortedVitals = useMemo(() => {
+    const sorted = [...filteredVitals].sort((a, b) => {
+      const aValue = sortValue(a, sortKey);
+      const bValue = sortValue(b, sortKey);
+      return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+    });
+
+    return sorted;
+  }, [filteredVitals, sortDirection, sortKey]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedVitals.length / PAGE_SIZE));
+
+  const pageRecords = useMemo(() => {
+    const safePage = Math.min(page, totalPages);
+    const start = (safePage - 1) * PAGE_SIZE;
+    return sortedVitals.slice(start, start + PAGE_SIZE);
+  }, [page, sortedVitals, totalPages]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [sortKey, sortDirection, fromDate, toDate]);
+
+  function toggleSort(nextKey: SortKey) {
+    if (sortKey === nextKey) {
+      setSortDirection((previous) => (previous === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+
+    setSortKey(nextKey);
+    setSortDirection(nextKey === 'datetime' ? 'desc' : 'asc');
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -207,22 +297,41 @@ export default function PatientVitalsPage() {
   }
 
   return (
-    <section className="patient-page">
-      <header className="patient-page-head">
+    <section className="patient-page patient-vitals-page">
+      <header className="patient-page-head patient-vitals-head">
         <div>
           <h2>Log Your Vitals</h2>
-          <p>Track your daily health metrics with live risk scoring.</p>
+          <p>Track your daily health metrics</p>
+        </div>
+
+        <div className="patient-vitals-head-actions">
+          <button type="button" className="patient-secondary-button" onClick={() => window.print()}>
+            Export as PDF
+          </button>
+          <div className="patient-vitals-date-range" aria-label="Filter by date">
+            <label>
+              From
+              <input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
+            </label>
+            <label>
+              To
+              <input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+            </label>
+          </div>
         </div>
       </header>
 
       {error ? <p className="patient-error-banner">{error}</p> : null}
       {success ? <p className="patient-success-banner">{success}</p> : null}
 
-      <article className="patient-card">
-        <h3>{editingVitalId ? 'Edit Entry' : 'New Entry'}</h3>
+      <article className="patient-card patient-vitals-entry-card">
+        <div className="patient-card-head">
+          <h3>{editingVitalId ? 'Edit Entry' : 'New Entry'}</h3>
+          <p>{new Date().toLocaleDateString()}</p>
+        </div>
 
-        <form className="patient-form-grid" onSubmit={handleSubmit}>
-          <label>
+        <form className="patient-vitals-form" onSubmit={handleSubmit}>
+          <label className="patient-vitals-row-full">
             Date and Time
             <input
               type="datetime-local"
@@ -231,94 +340,114 @@ export default function PatientVitalsPage() {
             />
           </label>
 
-          <label>
-            Systolic (mmHg)
-            <input
-              type="number"
-              value={form.systolic}
-              onChange={(event) => setForm((previous) => ({ ...previous, systolic: event.target.value }))}
-            />
-          </label>
+          <div className="patient-vitals-two-col">
+            <div className="patient-vitals-fieldset">
+              <p className="patient-vitals-fieldset-title">Blood Pressure</p>
+              <div className="patient-vitals-inline-inputs">
+                <label>
+                  Systolic mmHg
+                  <input
+                    type="number"
+                    value={form.systolic}
+                    onChange={(event) => setForm((previous) => ({ ...previous, systolic: event.target.value }))}
+                  />
+                </label>
+                <label>
+                  Diastolic mmHg
+                  <input
+                    type="number"
+                    value={form.diastolic}
+                    onChange={(event) => setForm((previous) => ({ ...previous, diastolic: event.target.value }))}
+                  />
+                </label>
+              </div>
+              <p className="patient-field-hint">Normal: 90-120 / 60-80 mmHg</p>
+            </div>
 
-          <label>
-            Diastolic (mmHg)
-            <input
-              type="number"
-              value={form.diastolic}
-              onChange={(event) => setForm((previous) => ({ ...previous, diastolic: event.target.value }))}
-            />
-          </label>
+            <label className="patient-vitals-fieldset">
+              <span className="patient-vitals-fieldset-title">Heart Rate</span>
+              <input
+                type="number"
+                value={form.heartRate}
+                onChange={(event) => setForm((previous) => ({ ...previous, heartRate: event.target.value }))}
+              />
+              <p className="patient-field-hint">Normal: 60-100 bpm</p>
+            </label>
+          </div>
 
-          <label>
-            Heart Rate (bpm)
-            <input
-              type="number"
-              value={form.heartRate}
-              onChange={(event) => setForm((previous) => ({ ...previous, heartRate: event.target.value }))}
-            />
-          </label>
+          <div className="patient-vitals-two-col">
+            <label className="patient-vitals-fieldset">
+              <span className="patient-vitals-fieldset-title">Oxygen Level (SpO2 %)</span>
+              <input
+                type="number"
+                value={form.spo2}
+                onChange={(event) => setForm((previous) => ({ ...previous, spo2: event.target.value }))}
+              />
+              <p className="patient-field-hint">Normal: 95-100%</p>
+            </label>
 
-          <label>
-            SpO2 (%)
-            <input
-              type="number"
-              value={form.spo2}
-              onChange={(event) => setForm((previous) => ({ ...previous, spo2: event.target.value }))}
-            />
-          </label>
+            <label className="patient-vitals-fieldset">
+              <span className="patient-vitals-fieldset-title">Temperature (C)</span>
+              <input
+                type="number"
+                step="0.1"
+                value={form.temperatureC}
+                onChange={(event) =>
+                  setForm((previous) => ({ ...previous, temperatureC: event.target.value }))
+                }
+              />
+              <p className="patient-field-hint">Normal: 36.1-37.2 C</p>
+            </label>
+          </div>
 
-          <label>
-            Temperature (C)
-            <input
-              type="number"
-              step="0.1"
-              value={form.temperatureC}
-              onChange={(event) =>
-                setForm((previous) => ({ ...previous, temperatureC: event.target.value }))
-              }
-            />
-          </label>
+          <div className="patient-vitals-two-col">
+            <div className="patient-vitals-fieldset">
+              <label>
+                <span className="patient-vitals-fieldset-title">Blood Glucose (mg/dL)</span>
+                <input
+                  type="number"
+                  value={form.glucoseValue}
+                  onChange={(event) =>
+                    setForm((previous) => ({ ...previous, glucoseValue: event.target.value }))
+                  }
+                />
+              </label>
 
-          <label>
-            Glucose (mg/dL)
-            <input
-              type="number"
-              value={form.glucoseValue}
-              onChange={(event) =>
-                setForm((previous) => ({ ...previous, glucoseValue: event.target.value }))
-              }
-            />
-          </label>
+              <div className="patient-glucose-mode-row">
+                {(['fasting', 'post_meal', 'random'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    className={`patient-glucose-mode-pill ${form.glucoseMode === mode ? 'is-active' : ''}`}
+                    onClick={() => setForm((previous) => ({ ...previous, glucoseMode: mode }))}
+                  >
+                    {mode === 'post_meal' ? 'Post-meal' : mode === 'fasting' ? 'Fasting' : 'Random'}
+                  </button>
+                ))}
+              </div>
 
-          <label>
-            Glucose Mode
-            <select
-              value={form.glucoseMode}
-              onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  glucoseMode: event.target.value as VitalFormState['glucoseMode']
-                }))
-              }
-            >
-              <option value="fasting">Fasting</option>
-              <option value="post_meal">Post-meal</option>
-              <option value="random">Random</option>
-            </select>
-          </label>
+              <p className="patient-field-hint">
+                {form.glucoseMode === 'fasting'
+                  ? 'Fasting target: 70-99 mg/dL'
+                  : form.glucoseMode === 'post_meal'
+                    ? 'Post-meal target: under 140 mg/dL'
+                    : 'Random target: under 180 mg/dL'}
+              </p>
+            </div>
 
-          <label>
-            Weight (kg)
-            <input
-              type="number"
-              step="0.1"
-              value={form.weightKg}
-              onChange={(event) => setForm((previous) => ({ ...previous, weightKg: event.target.value }))}
-            />
-          </label>
+            <label className="patient-vitals-fieldset">
+              <span className="patient-vitals-fieldset-title">Weight (kg)</span>
+              <input
+                type="number"
+                step="0.1"
+                value={form.weightKg}
+                onChange={(event) => setForm((previous) => ({ ...previous, weightKg: event.target.value }))}
+              />
+            </label>
+          </div>
 
-          <label className="patient-form-span-2">
-            Notes
+          <label className="patient-vitals-row-full">
+            Notes (optional)
             <textarea
               rows={3}
               value={form.notes}
@@ -326,7 +455,7 @@ export default function PatientVitalsPage() {
             />
           </label>
 
-          <div className="patient-form-actions patient-form-span-2">
+          <div className="patient-vitals-submit-row">
             <button type="submit" className="patient-primary-button" disabled={submitting}>
               {submitting ? 'Saving...' : editingVitalId ? 'Update Entry' : 'Save Vital Entry'}
             </button>
@@ -339,9 +468,9 @@ export default function PatientVitalsPage() {
         </form>
       </article>
 
-      <article className="patient-card">
+      <article className="patient-card patient-vitals-history-card">
         <div className="patient-card-head">
-          <h3>Vitals History</h3>
+          <h3>History</h3>
           <p>{sortedVitals.length} entries</p>
         </div>
 
@@ -350,55 +479,127 @@ export default function PatientVitalsPage() {
         ) : sortedVitals.length === 0 ? (
           <p className="patient-empty-state">No vitals logged yet.</p>
         ) : (
-          <div className="patient-table-wrap">
-            <table className="patient-table">
-              <thead>
-                <tr>
-                  <th>Date & Time</th>
-                  <th>Blood Pressure</th>
-                  <th>Heart Rate</th>
-                  <th>SpO2</th>
-                  <th>Glucose</th>
-                  <th>Weight</th>
-                  <th>Temp</th>
-                  <th>Risk</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedVitals.map((record) => (
-                  <tr key={record.id}>
-                    <td>{formatDateTime(record.datetime)}</td>
-                    <td>{formatBloodPressure(record.bloodPressure)}</td>
-                    <td>{record.heartRate ?? '-'}</td>
-                    <td>{record.spo2 ? `${record.spo2}%` : '-'}</td>
-                    <td>{record.glucose?.value ?? '-'}</td>
-                    <td>{record.weightKg ?? '-'}</td>
-                    <td>{record.temperatureC ?? '-'}</td>
-                    <td>
-                      <span className={`patient-risk-pill ${riskClass(record.riskLevel)}`}>
-                        {riskLabel(record.riskLevel)}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="patient-inline-actions">
-                        <button type="button" className="patient-link-button" onClick={() => handleEdit(record)}>
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className="patient-link-button danger"
-                          onClick={() => handleDelete(record.id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
+          <>
+            <div className="patient-table-wrap">
+              <table className="patient-table">
+                <thead>
+                  <tr>
+                    <th>
+                      <button type="button" className="patient-table-sort" onClick={() => toggleSort('datetime')}>
+                        Date and Time
+                        <span>{sortKey === 'datetime' ? sortDirection : 'sort'}</span>
+                      </button>
+                    </th>
+                    <th>
+                      <button
+                        type="button"
+                        className="patient-table-sort"
+                        onClick={() => toggleSort('bloodPressure')}
+                      >
+                        Blood Pressure
+                        <span>{sortKey === 'bloodPressure' ? sortDirection : 'sort'}</span>
+                      </button>
+                    </th>
+                    <th>
+                      <button type="button" className="patient-table-sort" onClick={() => toggleSort('heartRate')}>
+                        Heart Rate
+                        <span>{sortKey === 'heartRate' ? sortDirection : 'sort'}</span>
+                      </button>
+                    </th>
+                    <th>
+                      <button type="button" className="patient-table-sort" onClick={() => toggleSort('spo2')}>
+                        SpO2
+                        <span>{sortKey === 'spo2' ? sortDirection : 'sort'}</span>
+                      </button>
+                    </th>
+                    <th>
+                      <button type="button" className="patient-table-sort" onClick={() => toggleSort('glucose')}>
+                        Glucose
+                        <span>{sortKey === 'glucose' ? sortDirection : 'sort'}</span>
+                      </button>
+                    </th>
+                    <th>
+                      <button type="button" className="patient-table-sort" onClick={() => toggleSort('weightKg')}>
+                        Weight
+                        <span>{sortKey === 'weightKg' ? sortDirection : 'sort'}</span>
+                      </button>
+                    </th>
+                    <th>
+                      <button
+                        type="button"
+                        className="patient-table-sort"
+                        onClick={() => toggleSort('temperatureC')}
+                      >
+                        Temp
+                        <span>{sortKey === 'temperatureC' ? sortDirection : 'sort'}</span>
+                      </button>
+                    </th>
+                    <th>
+                      <button type="button" className="patient-table-sort" onClick={() => toggleSort('risk')}>
+                        Risk
+                        <span>{sortKey === 'risk' ? sortDirection : 'sort'}</span>
+                      </button>
+                    </th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {pageRecords.map((record) => (
+                    <tr key={record.id}>
+                      <td>{formatDateTime(record.datetime)}</td>
+                      <td>{formatBloodPressure(record.bloodPressure)}</td>
+                      <td>{record.heartRate ? `${record.heartRate} bpm` : '-'}</td>
+                      <td>{record.spo2 ? `${record.spo2}%` : '-'}</td>
+                      <td>{record.glucose?.value ? `${record.glucose.value} mg/dL` : '-'}</td>
+                      <td>{record.weightKg ? `${record.weightKg} kg` : '-'}</td>
+                      <td>{record.temperatureC ? `${record.temperatureC} C` : '-'}</td>
+                      <td>
+                        <span className={`patient-risk-pill ${riskClass(record.riskLevel)}`}>
+                          {riskLabel(record.riskLevel)}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="patient-inline-actions">
+                          <button type="button" className="patient-link-button" onClick={() => handleEdit(record)}>
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="patient-link-button danger"
+                            onClick={() => handleDelete(record.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="patient-pagination-row">
+              <button
+                type="button"
+                className="patient-secondary-button"
+                disabled={page <= 1}
+                onClick={() => setPage((previous) => Math.max(previous - 1, 1))}
+              >
+                Previous
+              </button>
+              <p>
+                Page {Math.min(page, totalPages)} of {totalPages}
+              </p>
+              <button
+                type="button"
+                className="patient-secondary-button"
+                disabled={page >= totalPages}
+                onClick={() => setPage((previous) => Math.min(previous + 1, totalPages))}
+              >
+                Next
+              </button>
+            </div>
+          </>
         )}
       </article>
     </section>

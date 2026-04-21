@@ -9,6 +9,7 @@ export const ROUTE_PATHS = {
   auth: {
     login: '/login',
     register: '/register',
+    adminRoot: '/admin',
     adminLogin: '/admin/login'
   },
   patient: {
@@ -24,6 +25,7 @@ export const ROUTE_PATHS = {
   },
   doctor: {
     dashboard: '/doctor/dashboard',
+    onboarding: '/doctor/onboarding',
     patients: '/doctor/patients',
     patientDetail: '/doctor/patients/:id',
     appointments: '/doctor/appointments',
@@ -36,8 +38,11 @@ export const ROUTE_PATHS = {
   admin: {
     dashboard: '/admin/dashboard',
     doctors: '/admin/doctors',
+    patients: '/admin/patients',
     blogs: '/admin/blogs',
+    appointments: '/admin/appointments',
     analytics: '/admin/analytics',
+    notifications: '/admin/notifications',
     settings: '/admin/settings'
   }
 } as const;

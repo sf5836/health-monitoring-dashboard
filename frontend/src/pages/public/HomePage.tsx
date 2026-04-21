@@ -11,6 +11,7 @@ import {
   type PublicDoctorCard,
   type PublicTestimonialCard
 } from '../../services/publicContentService';
+import { getSessionDashboardRoute, isSessionActive } from '../../services/authSession';
 import { ROUTE_PATHS } from '../../routes/routePaths';
 
 const stats = [
@@ -79,6 +80,8 @@ function StepArt({ kind }: Readonly<{ kind: 'account' | 'vitals' | 'care' }>) {
 }
 
 export default function HomePage() {
+  const isLoggedIn = isSessionActive();
+  const sessionDashboardRoute = getSessionDashboardRoute();
   const [headerScrolled, setHeaderScrolled] = useState(false);
   const [featuredDoctors, setFeaturedDoctors] = useState<PublicDoctorCard[]>([]);
   const [featuredBlogs, setFeaturedBlogs] = useState<PublicBlogCard[]>([]);
@@ -183,12 +186,20 @@ export default function HomePage() {
           </nav>
 
           <div className="hm-auth-actions">
-            <Link to={ROUTE_PATHS.auth.login} className="hm-btn hm-btn-outline">
-              Login
-            </Link>
-            <Link to={ROUTE_PATHS.auth.register} className="hm-btn hm-btn-solid">
-              Register
-            </Link>
+            {isLoggedIn && sessionDashboardRoute ? (
+              <Link to={sessionDashboardRoute} className="hm-btn hm-btn-solid">
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link to={ROUTE_PATHS.auth.login} className="hm-btn hm-btn-outline">
+                  Login
+                </Link>
+                <Link to={ROUTE_PATHS.auth.register} className="hm-btn hm-btn-solid">
+                  Register
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -210,9 +221,15 @@ export default function HomePage() {
                 all in one secure platform.
               </p>
               <div className="hm-cta-row">
-                <Link to={ROUTE_PATHS.auth.register} className="hm-btn hm-btn-solid hm-btn-lg">
-                  Get Started Free
-                </Link>
+                {isLoggedIn && sessionDashboardRoute ? (
+                  <Link to={sessionDashboardRoute} className="hm-btn hm-btn-solid hm-btn-lg">
+                    Open Dashboard
+                  </Link>
+                ) : (
+                  <Link to={ROUTE_PATHS.auth.register} className="hm-btn hm-btn-solid hm-btn-lg">
+                    Get Started Free
+                  </Link>
+                )}
                 <a href="#doctors" className="hm-btn hm-btn-outline hm-btn-lg">
                   Find a Doctor
                 </a>

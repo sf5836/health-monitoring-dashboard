@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const path = require('path');
 const { Server } = require('socket.io');
 
 const env = require('./config/env');
@@ -65,8 +66,9 @@ setIO(io);
 
 app.use(helmet());
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '30mb' }));
 app.use(morgan(env.nodeEnv === 'production' ? 'combined' : 'dev'));
+app.use('/assets', express.static(path.resolve(__dirname, '../uploads/assets')));
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'healthmonitorpro-backend' });

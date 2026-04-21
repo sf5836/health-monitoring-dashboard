@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
+const PatientProfile = require('../models/PatientProfile');
+const User = require('../models/User');
 const { createNotification } = require('../services/notificationService');
 
 function isObjectId(value) {
@@ -25,6 +27,35 @@ async function resolveConversation({ senderId, conversationId, toUserId }) {
 			throw error;
 		}
 
+		const participantIds = (existing.participantIds || []).map((id) => String(id));
+		if (participantIds.length === 2) {
+			const participants = await User.find({ _id: { $in: participantIds }, isActive: true })
+				.select('_id role')
+				.lean();
+
+			const patient = participants.find((item) => item.role === 'patient');
+			const doctor = participants.find((item) => item.role === 'doctor');
+
+			if (!patient || !doctor) {
+				const error = new Error('Conversation type is not allowed');
+				error.statusCode = 403;
+				throw error;
+			}
+
+			const profile = await PatientProfile.findOne({
+				userId: patient._id,
+				connectedDoctorIds: doctor._id
+			})
+				.select('_id')
+				.lean();
+
+			if (!profile) {
+				const error = new Error('Patient is not connected to this doctor');
+				error.statusCode = 403;
+				throw error;
+			}
+		}
+
 		return existing;
 	}
 
@@ -34,8 +65,43 @@ async function resolveConversation({ senderId, conversationId, toUserId }) {
 		throw error;
 	}
 
+	const [senderUser, targetUser] = await Promise.all([
+		User.findById(senderId).select('_id role isActive').lean(),
+		User.findById(toUserId).select('_id role isActive').lean()
+	]);
+
+	if (!senderUser || !targetUser || !senderUser.isActive || !targetUser.isActive) {
+		const error = new Error('User not found or inactive');
+		error.statusCode = 404;
+		throw error;
+	}
+
+	if (senderUser.role !== 'admin') {
+		const patientId = senderUser.role === 'patient' ? String(senderUser._id) : targetUser.role === 'patient' ? String(targetUser._id) : null;
+		const doctorId = senderUser.role === 'doctor' ? String(senderUser._id) : targetUser.role === 'doctor' ? String(targetUser._id) : null;
+
+		if (!patientId || !doctorId) {
+			const error = new Error('Only patient-doctor conversations are allowed');
+			error.statusCode = 403;
+			throw error;
+		}
+
+		const profile = await PatientProfile.findOne({
+			userId: patientId,
+			connectedDoctorIds: doctorId
+		})
+			.select('_id')
+			.lean();
+
+		if (!profile) {
+			const error = new Error('Patient is not connected to this doctor');
+			error.statusCode = 403;
+			throw error;
+		}
+	}
+
 	let conversation = await Conversation.findOne({
-		participantIds: { $all: [senderId, toUserId] }
+		$and: [{ participantIds: { $all: [senderId, toUserId] } }, { participantIds: { $size: 2 } }]
 	});
 
 	if (!conversation) {
@@ -64,6 +130,7 @@ async function emitConversationSnapshot(io, conversation) {
 module.exports = function chatHandler(io) {
 	io.on('connection', (socket) => {
 		const userId = socket.data?.user?.id;
+		const userRole = socket.data?.user?.role;
 
 		if (!userId || !isObjectId(userId)) {
 			socket.disconnect(true);
@@ -95,6 +162,38 @@ module.exports = function chatHandler(io) {
 				if (!conversation) {
 					socketError(socket, 'chat:error', 'Conversation not found');
 					return;
+				}
+
+				if (userRole !== 'admin') {
+					const fullConversation = await Conversation.findById(conversationId)
+						.select('participantIds')
+						.lean();
+					const participantIds = (fullConversation?.participantIds || []).map((id) => String(id));
+					if (participantIds.length === 2) {
+						const participants = await User.find({ _id: { $in: participantIds }, isActive: true })
+							.select('_id role')
+							.lean();
+
+						const patient = participants.find((item) => item.role === 'patient');
+						const doctor = participants.find((item) => item.role === 'doctor');
+
+						if (!patient || !doctor) {
+							socketError(socket, 'chat:error', 'Conversation type is not allowed');
+							return;
+						}
+
+						const profile = await PatientProfile.findOne({
+							userId: patient._id,
+							connectedDoctorIds: doctor._id
+						})
+							.select('_id')
+							.lean();
+
+						if (!profile) {
+							socketError(socket, 'chat:error', 'Patient is not connected to this doctor');
+							return;
+						}
+					}
 				}
 
 				socket.join(`room:conversation:${String(conversationId)}`);

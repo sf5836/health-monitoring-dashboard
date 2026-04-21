@@ -158,10 +158,11 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 function mapDoctor(item: ApiDoctor): PublicDoctorCard {
   const feeValue = item.fee ?? 0;
   const experienceYears = item.experienceYears ?? 0;
+  const doctorName = String(item.userId?.fullName || '').trim();
 
   return {
     id: item.userId?._id || item._id,
-    name: item.userId?.fullName || 'Doctor',
+    name: doctorName || 'Unknown Doctor',
     specialization: item.specialization || 'General Medicine',
     experience: `${experienceYears} years`,
     experienceYears,
@@ -204,27 +205,43 @@ function mapBlog(item: ApiBlog): PublicBlogCard {
 }
 
 function mapTestimonial(item: ApiTestimonial): PublicTestimonialCard {
+  const name = String(item.name || '').trim();
+  const quote = String(item.quote || '').trim();
+  if (!name || !quote) {
+    return {
+      id: '',
+      name: '',
+      role: '',
+      quote: ''
+    };
+  }
+
   return {
     id: item.id || item._id || crypto.randomUUID(),
-    name: item.name || 'Patient',
-    role: item.role || 'Patient',
-    quote: item.quote || ''
+    name,
+    role: item.role || 'Community Member',
+    quote
   };
 }
 
 function mapDoctorReview(item: ApiDoctorReview): PublicDoctorReview {
   const parsedDate = item.date ? new Date(item.date) : null;
+  const name = String(item.name || '').trim();
+  const quote = String(item.quote || '').trim();
+
   return {
     id: item.id || item._id || crypto.randomUUID(),
-    name: item.name || 'Patient',
+    name,
     date: parsedDate && !Number.isNaN(parsedDate.getTime()) ? dateFormatter.format(parsedDate) : 'Recent',
-    quote: item.quote || ''
+    quote
   };
 }
 
 export async function getPublicDoctors(limit = 20): Promise<PublicDoctorCard[]> {
   const response = await apiRequest<DoctorListResponse>(`/doctors?limit=${limit}`);
-  return (response.data.doctors || []).map(mapDoctor);
+  return (response.data.doctors || [])
+    .filter((item) => Boolean(item.userId?._id && String(item.userId?.fullName || '').trim()))
+    .map(mapDoctor);
 }
 
 export async function getPublicDoctorsListing(
@@ -233,7 +250,9 @@ export async function getPublicDoctorsListing(
   const qs = toQueryString(query);
   const response = await apiRequest<DoctorListResponse>(`/doctors${qs ? `?${qs}` : ''}`);
 
-  const mappedDoctors = (response.data.doctors || []).map(mapDoctor);
+  const mappedDoctors = (response.data.doctors || [])
+    .filter((item) => Boolean(item.userId?._id && String(item.userId?.fullName || '').trim()))
+    .map(mapDoctor);
   const pagination = response.data.pagination || {};
 
   return {
@@ -270,7 +289,9 @@ export async function getPublicDoctorReviews(
   const response = await apiRequest<DoctorReviewListResponse>(
     `/doctors/${doctorId}/reviews/public?limit=${limit}`
   );
-  return (response.data.reviews || []).map(mapDoctorReview).filter((item) => item.quote.trim().length > 0);
+  return (response.data.reviews || [])
+    .map(mapDoctorReview)
+    .filter((item) => item.quote.trim().length > 0 && item.name.trim().length > 0);
 }
 
 export async function getPublicBlogs(limit = 20): Promise<PublicBlogCard[]> {
@@ -280,7 +301,9 @@ export async function getPublicBlogs(limit = 20): Promise<PublicBlogCard[]> {
 
 export async function getPublicTestimonials(limit = 12): Promise<PublicTestimonialCard[]> {
   const response = await apiRequest<TestimonialListResponse>(`/doctors/reviews/public?limit=${limit}`);
-  return (response.data.testimonials || []).map(mapTestimonial).filter((item) => item.quote.trim().length > 0);
+  return (response.data.testimonials || [])
+    .map(mapTestimonial)
+    .filter((item) => item.quote.trim().length > 0 && item.name.trim().length > 0);
 }
 
 export async function subscribeNewsletter(email: string): Promise<string> {

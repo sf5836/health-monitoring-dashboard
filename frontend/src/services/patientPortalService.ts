@@ -670,6 +670,18 @@ export async function getMyConversations(): Promise<ChatConversation[]> {
   return (response.data.conversations || []).map(mapConversation);
 }
 
+export async function createOrGetConversationWithUser(userId: string): Promise<ChatConversation> {
+  const response = await apiRequest<ApiEnvelope<{ conversation: BackendConversation }>>(
+    '/chat/me/conversations',
+    {
+      method: 'POST',
+      body: JSON.stringify({ toUserId: userId })
+    }
+  );
+
+  return mapConversation(response.data.conversation);
+}
+
 export async function getConversationMessages(conversationId: string): Promise<ChatMessage[]> {
   const response = await apiRequest<
     ApiEnvelope<{ conversation: BackendConversation; messages: BackendMessage[] }>

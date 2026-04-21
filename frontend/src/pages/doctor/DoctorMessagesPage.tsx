@@ -10,7 +10,7 @@ import {
 } from '../../services/patientPortalService';
 import { connectPatientRealtime } from '../../services/patientRealtime';
 import { sessionStore } from '../../services/sessionStore';
-import { formatDateTime } from './patientUi';
+import { formatDateTime } from '../patient/patientUi';
 
 function otherParticipantName(conversation: ChatConversation, myUserId: string): string {
   const participant = conversation.participants.find((item) => item.id !== myUserId);
@@ -61,12 +61,12 @@ function normalizeIncomingMessage(raw: {
 
 function initials(name: string): string {
   const parts = name.trim().split(' ').filter(Boolean);
-  if (parts.length === 0) return 'DR';
+  if (parts.length === 0) return 'PT';
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
-export default function PatientMessagesPage() {
+export default function DoctorMessagesPage() {
   const [searchParams] = useSearchParams();
   const preferredConversationId = searchParams.get('conversationId') || '';
   const [myUserId, setMyUserId] = useState(sessionStore.getUserId() || '');
@@ -258,7 +258,7 @@ export default function PatientMessagesPage() {
       <header className="patient-page-head">
         <div>
           <h2>Messages</h2>
-          <p>Real-time chat with your connected doctors</p>
+          <p>Real-time chat with your connected patients</p>
         </div>
         <p className={`patient-connection-pill ${isSocketConnected ? 'online' : 'offline'}`}>
           {isSocketConnected ? 'Realtime connected' : 'Realtime offline'}
@@ -326,9 +326,6 @@ export default function PatientMessagesPage() {
                     <small>{isSocketConnected ? 'Online' : 'Offline'}</small>
                   </div>
                 </div>
-                <button type="button" className="patient-link-button">
-                  View Profile
-                </button>
               </>
             ) : (
               <h3>Select a conversation</h3>
@@ -345,7 +342,10 @@ export default function PatientMessagesPage() {
                     <article key={message.id} className={`patient-chat-bubble ${isMine ? 'is-mine' : ''}`}>
                       {message.messageType === 'file' && message.fileUrl ? (
                         <p>
-                          Attachment: <a href={message.fileUrl} target="_blank" rel="noreferrer">Download file</a>
+                          Attachment:{' '}
+                          <a href={message.fileUrl} target="_blank" rel="noreferrer">
+                            Download file
+                          </a>
                         </p>
                       ) : message.messageType === 'prescription' ? (
                         <p>{message.text || 'Prescription shared'}</p>
@@ -372,11 +372,7 @@ export default function PatientMessagesPage() {
               onChange={(event) => setDraftMessage(event.target.value)}
               disabled={!selectedConversationId || sending}
             />
-            <button
-              type="submit"
-              className="patient-primary-button"
-              disabled={!selectedConversationId || sending}
-            >
+            <button type="submit" className="patient-primary-button" disabled={!selectedConversationId || sending}>
               {sending ? 'Sending...' : 'Send'}
             </button>
           </form>

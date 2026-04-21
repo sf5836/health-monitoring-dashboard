@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const PatientProfile = require('../models/PatientProfile');
 const DoctorProfile = require('../models/DoctorProfile');
+const { uploadBuffer } = require('../services/s3Service');
 const {
   signAccessToken,
   issueRefreshToken,
@@ -29,6 +30,62 @@ function sanitizeUser(user) {
     createdAt: user.createdAt,
     updatedAt: user.updatedAt
   };
+}
+
+function scheduleToText(availabilitySchedule) {
+  if (!Array.isArray(availabilitySchedule) || availabilitySchedule.length === 0) {
+    return undefined;
+  }
+
+  return availabilitySchedule
+    .map((slot) => `${slot.day}: ${slot.startTime}-${slot.endTime}`)
+    .join('; ');
+}
+
+function normalizeAvailabilitySchedule(availabilitySchedule) {
+  if (!Array.isArray(availabilitySchedule)) return [];
+
+  return availabilitySchedule
+    .map((slot) => ({
+      day: String(slot.day || '').trim().toLowerCase(),
+      startTime: String(slot.startTime || '').trim(),
+      endTime: String(slot.endTime || '').trim()
+    }))
+    .filter((slot) => slot.day && slot.startTime && slot.endTime);
+}
+
+async function uploadLegalDocuments(legalDocuments) {
+  if (!Array.isArray(legalDocuments) || legalDocuments.length === 0) {
+    return [];
+  }
+
+  const uploaded = [];
+
+  for (const document of legalDocuments) {
+    const rawBase64 = String(document.dataBase64 || '').trim();
+    const normalizedBase64 = rawBase64.includes(',') ? rawBase64.split(',').pop() : rawBase64;
+    const buffer = Buffer.from(normalizedBase64 || '', 'base64');
+
+    if (!buffer.length) {
+      throw badRequest('Invalid legal document payload');
+    }
+
+    const upload = await uploadBuffer({
+      fileName: document.fileName,
+      _buffer: buffer,
+      contentType: document.contentType || 'application/pdf'
+    });
+
+    uploaded.push({
+      label: document.label ? String(document.label).trim() : undefined,
+      fileName: upload.fileName,
+      fileUrl: upload.url,
+      contentType: upload.contentType,
+      uploadedAt: new Date()
+    });
+  }
+
+  return uploaded;
 }
 
 async function registerPatient(req, res, next) {
@@ -87,13 +144,13 @@ async function registerDoctor(req, res, next) {
       hospital,
       fee,
       bio,
-      availability
+      availability,
+      availabilitySchedule,
+      legalDocuments
     } = req.body;
 
-    if (!fullName || !email || !password || !specialization || !licenseNumber) {
-      throw badRequest(
-        'fullName, email, password, specialization and licenseNumber are required'
-      );
+    if (!fullName || !email || !password) {
+      throw badRequest('fullName, email and password are required');
     }
 
     const normalizedEmail = String(email).toLowerCase().trim();
@@ -101,6 +158,9 @@ async function registerDoctor(req, res, next) {
     if (existing) {
       throw badRequest('Email already registered');
     }
+
+    const normalizedAvailabilitySchedule = normalizeAvailabilitySchedule(availabilitySchedule);
+    const uploadedLegalDocuments = await uploadLegalDocuments(legalDocuments);
 
     const user = await User.create({
       role: 'doctor',
@@ -112,14 +172,16 @@ async function registerDoctor(req, res, next) {
 
     await DoctorProfile.create({
       userId: user._id,
-      specialization: String(specialization).trim(),
-      licenseNumber: String(licenseNumber).trim(),
+      specialization: specialization ? String(specialization).trim() : undefined,
+      licenseNumber: licenseNumber ? String(licenseNumber).trim() : undefined,
       qualifications: Array.isArray(qualifications) ? qualifications : [],
       experienceYears,
       hospital,
       fee,
       bio,
-      availability,
+      availability: availability ? String(availability).trim() : scheduleToText(normalizedAvailabilitySchedule),
+      availabilitySchedule: normalizedAvailabilitySchedule,
+      legalDocuments: uploadedLegalDocuments,
       approvalStatus: 'pending'
     });
 
