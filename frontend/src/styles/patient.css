@@ -123,15 +123,39 @@
   gap: 0.8rem;
 }
 
+.patient-notification-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
 .patient-notification-button {
   border: 1px solid var(--patient-border);
   background: #ffffff;
   border-radius: 999px;
-  padding: 0.45rem 0.9rem;
+  width: 2.55rem;
+  height: 2.55rem;
+  padding: 0;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+  display: inline-grid;
+  place-items: center;
+  position: relative;
+  color: #0d5c45;
+}
+
+.patient-notification-button:hover {
+  background: #f2faf7;
+  border-color: rgba(13, 92, 69, 0.35);
+}
+
+.patient-notification-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.patient-notification-wrap .patient-badge {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
 }
 
 .patient-sidebar-mobile-toggle {
@@ -381,6 +405,49 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
+}
+
+.patient-profile-photo-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.85rem;
+  border: 1px solid var(--patient-border);
+  border-radius: 14px;
+  background: #f8fdfb;
+}
+
+.patient-profile-photo {
+  width: 92px;
+  height: 92px;
+  border-radius: 999px;
+  border: 2px solid #ffffff;
+  background: linear-gradient(135deg, #0d5c45 0%, #1a9e72 100%);
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 1.05rem;
+  box-shadow: 0 12px 24px rgba(13, 92, 69, 0.18);
+  overflow: hidden;
+}
+
+.patient-profile-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.patient-profile-photo-actions h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.patient-profile-photo-actions p {
+  margin: 0 0 0.6rem;
+  color: var(--patient-subtext);
+  font-size: 0.86rem;
 }
 
 .patient-form-grid label {
@@ -673,12 +740,17 @@
 }
 
 .patient-notification-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.55rem);
+  z-index: 30;
+  width: min(340px, calc(100vw - 2rem));
   border: 1px solid var(--patient-border);
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 14px 30px rgba(13, 92, 69, 0.12);
-  margin: 0 1.5rem;
-  padding: 0.75rem;
+  margin: 0;
+  padding: 0.7rem;
 }
 
 .patient-notification-head {
@@ -707,17 +779,22 @@
   list-style: none;
   display: grid;
   gap: 0.45rem;
-  max-height: 260px;
+  max-height: 240px;
   overflow: auto;
 }
 
 .patient-notification-item {
   border: 1px solid var(--patient-border);
   border-radius: 10px;
-  padding: 0.55rem;
+  padding: 0.5rem;
   display: flex;
   justify-content: space-between;
   gap: 0.8rem;
+}
+
+.patient-notification-item button,
+.patient-notification-panel button {
+  font: inherit;
 }
 
 .patient-notification-item h3,
@@ -1056,6 +1133,14 @@
   font-weight: 700;
   position: relative;
   flex: 0 0 auto;
+}
+
+.patient-doctor-avatar.has-photo,
+.patient-chat-list-avatar.has-photo {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: transparent;
 }
 
 .patient-doctor-online-dot {
@@ -1406,10 +1491,19 @@
     justify-content: space-between;
   }
 
-  .patient-sidebar-mobile-toggle,
-  .patient-notification-button {
+  .patient-sidebar-mobile-toggle {
     font-size: 0.82rem;
     padding: 0.4rem 0.65rem;
+  }
+
+  .patient-notification-wrap {
+    margin-left: auto;
+  }
+
+  .patient-notification-panel {
+    right: 0;
+    left: auto;
+    width: min(320px, calc(100vw - 1.5rem));
   }
 
   .patient-vitals-date-range,

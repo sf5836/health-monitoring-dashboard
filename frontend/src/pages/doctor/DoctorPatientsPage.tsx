@@ -4,6 +4,7 @@ import { createOrGetConversationWithUser } from '../../services/patientPortalSer
 import {
   getDoctorPatientDetail,
   getDoctorPatients,
+  updateDoctorPatientRisk,
   type DoctorPatientDetail,
   type DoctorPatientSummary,
   type DoctorVitalRecord,
@@ -60,6 +61,7 @@ export default function DoctorPatientsPage() {
   const [sortBy, setSortBy] = useState<'updated' | 'name' | 'risk'>('updated');
   const [page, setPage] = useState(1);
   const [selectedPatientId, setSelectedPatientId] = useState('');
+  const [updatingRiskId, setUpdatingRiskId] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +88,7 @@ export default function DoctorPatientsPage() {
           }
 
           const lastVital = detail?.latestVitals[0];
+          const overrideRisk = row.riskOverride?.level;
           const primaryConcern =
             row.medicalHistory?.split(/[.;]/)[0]?.trim() ||
             lastVital?.riskReasons[0] ||
@@ -94,7 +97,7 @@ export default function DoctorPatientsPage() {
 
           return {
             ...row,
-            riskLevel: lastVital?.riskLevel || 'normal',
+            riskLevel: overrideRisk || lastVital?.riskLevel || 'normal',
             primaryConcern,
             lastVital
           } satisfies EnrichedPatient;
@@ -156,6 +159,56 @@ export default function DoctorPatientsPage() {
 
   const selectedDetail = selectedPatientId ? detailMap[selectedPatientId] : undefined;
   const selectedPatient = selectedPatientId ? patients.find((item) => item.patientId === selectedPatientId) : undefined;
+
+  async function onUpdateRisk(patientId: string, level: RiskLevel) {
+    try {
+      setUpdatingRiskId(patientId);
+      const riskOverride = await updateDoctorPatientRisk(patientId, { level });
+      setPatients((previous) =>
+        previous.map((patient) =>
+          patient.patientId === patientId
+            ? {
+                ...patient,
+                riskLevel: riskOverride?.level || level,
+                riskOverride: riskOverride
+                  ? {
+                      level: riskOverride.level,
+                      note: riskOverride.note,
+                      updatedAt: riskOverride.updatedAt,
+                      updatedBy: riskOverride.updatedBy
+                    }
+                  : undefined
+              }
+            : patient
+        )
+      );
+      setDetailMap((previous) => {
+        const detail = previous[patientId];
+        if (!detail) return previous;
+        return {
+          ...previous,
+          [patientId]: {
+            ...detail,
+            profile: {
+              ...detail.profile,
+              riskOverride: riskOverride
+                ? {
+                    level: riskOverride.level,
+                    note: riskOverride.note,
+                    updatedAt: riskOverride.updatedAt,
+                    updatedBy: riskOverride.updatedBy
+                  }
+                : undefined
+            }
+          }
+        };
+      });
+    } catch {
+      setError('Unable to update patient risk right now.');
+    } finally {
+      setUpdatingRiskId('');
+    }
+  }
 
   async function onMessagePatient(patientId: string) {
     try {
@@ -254,8 +307,16 @@ export default function DoctorPatientsPage() {
                     onClick={() => setSelectedPatientId(patient.patientId)}
                   >
                     <td>
-                      <div className="doctor-avatar-mini" aria-hidden="true">
-                        {initials(patient.fullName)}
+                      <div
+                        className={`doctor-avatar-mini ${patient.profilePhotoUrl ? 'has-photo' : ''}`}
+                        aria-hidden="true"
+                        style={
+                          patient.profilePhotoUrl
+                            ? { backgroundImage: `url(${patient.profilePhotoUrl})` }
+                            : undefined
+                        }
+                      >
+                        {patient.profilePhotoUrl ? null : initials(patient.fullName)}
                       </div>
                     </td>
                     <td>
@@ -283,6 +344,15 @@ export default function DoctorPatientsPage() {
                         >
                           💬
                         </button>
+                        <select
+                          value={patient.riskLevel}
+                          onChange={(event) => onUpdateRisk(patient.patientId, event.target.value as RiskLevel)}
+                          disabled={updatingRiskId === patient.patientId}
+                        >
+                          <option value="normal">Normal</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
+                        </select>
                       </div>
                     </td>
                   </tr>
@@ -323,8 +393,16 @@ export default function DoctorPatientsPage() {
       {selectedPatient && selectedDetail ? (
         <aside className="doctor-quick-view-panel" aria-label="Patient quick view">
           <header>
-            <div className="doctor-avatar-large" aria-hidden="true">
-              {initials(selectedPatient.fullName)}
+            <div
+              className={`doctor-avatar-large ${selectedPatient.profilePhotoUrl ? 'has-photo' : ''}`}
+              aria-hidden="true"
+              style={
+                selectedPatient.profilePhotoUrl
+                  ? { backgroundImage: `url(${selectedPatient.profilePhotoUrl})` }
+                  : undefined
+              }
+            >
+              {selectedPatient.profilePhotoUrl ? null : initials(selectedPatient.fullName)}
             </div>
             <div>
               <h3>{selectedPatient.fullName}</h3>

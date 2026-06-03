@@ -23,6 +23,41 @@ const doctorNoteSchema = new mongoose.Schema(
 	{ _id: true }
 );
 
+const medicalDocumentSchema = new mongoose.Schema(
+	{
+		label: { type: String, trim: true },
+		fileName: { type: String, trim: true },
+		fileUrl: { type: String, trim: true },
+		contentType: { type: String, trim: true },
+		uploadedAt: { type: Date, default: Date.now }
+	},
+	{ _id: true }
+);
+
+const profilePhotoSchema = new mongoose.Schema(
+	{
+		fileName: { type: String, trim: true },
+		fileUrl: { type: String, trim: true },
+		contentType: { type: String, trim: true },
+		uploadedAt: { type: Date, default: Date.now }
+	},
+	{ _id: false }
+);
+
+const riskOverrideSchema = new mongoose.Schema(
+	{
+		level: {
+			type: String,
+			enum: ['normal', 'medium', 'high'],
+			required: true
+		},
+		note: { type: String, trim: true },
+		updatedAt: { type: Date, default: Date.now },
+		updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+	},
+	{ _id: false }
+);
+
 const patientProfileSchema = new mongoose.Schema(
 	{
 		userId: {
@@ -39,6 +74,9 @@ const patientProfileSchema = new mongoose.Schema(
 		allergies: [{ type: String, trim: true }],
 		medications: [{ type: String, trim: true }],
 		medicalHistory: { type: String, trim: true },
+		profilePhoto: profilePhotoSchema,
+		riskOverride: riskOverrideSchema,
+		medicalDocuments: [medicalDocumentSchema],
 		emergencyContact: emergencyContactSchema,
 		connectedDoctorIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 		doctorNotes: [doctorNoteSchema]

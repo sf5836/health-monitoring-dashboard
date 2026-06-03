@@ -54,6 +54,73 @@ function renderVitalsSummary(vital: PortalVitalRecord): string {
     .join(' | ');
 }
 
+function resolveRiskLevel(detail: {
+  bloodPressure?: { systolic?: number; diastolic?: number };
+  heartRate?: number;
+  spo2?: number;
+}): PortalVitalRecord['riskLevel'] {
+  const systolic = detail.bloodPressure?.systolic || 0;
+  const diastolic = detail.bloodPressure?.diastolic || 0;
+  const heartRate = detail.heartRate || 0;
+  const spo2 = detail.spo2 || 0;
+
+  if (systolic >= 140 || diastolic >= 90 || heartRate >= 115 || (spo2 > 0 && spo2 < 94)) return 'high';
+  if (systolic >= 130 || diastolic >= 85 || heartRate >= 100 || (spo2 > 0 && spo2 < 96)) return 'medium';
+  return 'normal';
+}
+
+function buildDemoVitals(tick: number, count: number, stepHours: number): PortalVitalRecord[] {
+  const now = new Date();
+
+  return Array.from({ length: count }).map((_, index) => {
+    const shift = tick + index;
+    const systolic = 118 + Math.round(10 * Math.sin(shift / 2));
+    const diastolic = 76 + Math.round(6 * Math.cos(shift / 3));
+    const heartRate = 72 + Math.round(12 * Math.sin(shift / 4));
+    const spo2 = 97 + Math.round(2 * Math.cos(shift / 5));
+    const glucose = 92 + Math.round(14 * Math.sin(shift / 3));
+
+    const bloodPressure = { systolic, diastolic };
+    const riskLevel = resolveRiskLevel({ bloodPressure, heartRate, spo2 });
+
+    return {
+      id: `demo-${tick}-${index}`,
+      datetime: new Date(now.getTime() - index * stepHours * 60 * 60 * 1000).toISOString(),
+      bloodPressure,
+      heartRate,
+      spo2,
+      temperatureC: 36.6 + Number((0.3 * Math.sin(shift / 6)).toFixed(1)),
+      glucose: {
+        value: glucose,
+        mode: 'random'
+      },
+      weightKg: 72 + Math.round(2 * Math.cos(shift / 6)),
+      notes: 'Auto-generated demo reading',
+      riskLevel,
+      riskReasons: riskLevel === 'normal' ? [] : ['Demo risk threshold triggered']
+    };
+  });
+}
+
+function buildDemoDashboard(tick: number): { dashboard: PortalDashboard; weeklyVitals: PortalVitalRecord[] } {
+  const latestVitals = buildDemoVitals(tick, 5, 6);
+  const weeklyVitals = buildDemoVitals(tick, 10, 18).reverse();
+  const highRiskCount = latestVitals.filter((item) => item.riskLevel === 'high').length;
+
+  return {
+    dashboard: {
+      latestVitals,
+      metrics: {
+        highRiskCount,
+        upcomingAppointments: 0,
+        prescriptionCount: 0
+      },
+      upcomingAppointments: []
+    },
+    weeklyVitals
+  };
+}
+
 export default function PatientDashboardPage() {
   const [dashboard, setDashboard] = useState<PortalDashboard | null>(null);
   const [doctors, setDoctors] = useState<ConnectedDoctor[]>([]);
@@ -61,6 +128,7 @@ export default function PatientDashboardPage() {
   const [weeklyVitals, setWeeklyVitals] = useState<PortalVitalRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [demoMode, setDemoMode] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,6 +144,12 @@ export default function PatientDashboardPage() {
 
         if (cancelled) return;
 
+        const hasVitals = dashboardData.latestVitals.length > 0 || trendsData.vitals.length > 0;
+        if (!hasVitals) {
+          setDemoMode(true);
+          return;
+        }
+
         setDashboard(dashboardData);
         setDoctors(connectedDoctors);
         setPrescriptions(prescriptionData);
@@ -83,7 +157,8 @@ export default function PatientDashboardPage() {
         setError('');
       } catch {
         if (cancelled) return;
-        setError('Unable to load dashboard data from backend right now.');
+        setDemoMode(true);
+        setError('');
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -91,14 +166,34 @@ export default function PatientDashboardPage() {
       }
     }
 
-    loadDashboard();
-    const intervalId = window.setInterval(loadDashboard, 30000);
+    if (!demoMode) {
+      loadDashboard();
+    }
+
+    const intervalId = demoMode ? undefined : window.setInterval(loadDashboard, 30000);
 
     return () => {
       cancelled = true;
-      window.clearInterval(intervalId);
+      if (intervalId) window.clearInterval(intervalId);
     };
-  }, []);
+  }, [demoMode]);
+
+  useEffect(() => {
+    if (!demoMode) return undefined;
+
+    let tick = 0;
+    const applyDemo = () => {
+      const payload = buildDemoDashboard(tick);
+      setDashboard(payload.dashboard);
+      setWeeklyVitals(payload.weeklyVitals);
+      setLoading(false);
+      tick += 1;
+    };
+
+    applyDemo();
+    const intervalId = window.setInterval(applyDemo, 4000);
+    return () => window.clearInterval(intervalId);
+  }, [demoMode]);
 
   const latestVital = dashboard?.latestVitals[0];
   const previousVital = dashboard?.latestVitals[1];
@@ -194,6 +289,7 @@ export default function PatientDashboardPage() {
   return (
     <section className="patient-page">
       {error ? <p className="patient-error-banner">{error}</p> : null}
+      {demoMode ? <p className="patient-success-banner">Showing live demo vitals for testing.</p> : null}
 
       <article className="patient-welcome-banner">
         <div>

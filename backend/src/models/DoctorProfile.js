@@ -24,6 +24,16 @@ const legalDocumentSchema = new mongoose.Schema(
 	{ _id: false }
 );
 
+const profilePhotoSchema = new mongoose.Schema(
+	{
+		fileName: { type: String, trim: true },
+		fileUrl: { type: String, trim: true },
+		contentType: { type: String, trim: true },
+		uploadedAt: { type: Date, default: Date.now }
+	},
+	{ _id: false }
+);
+
 const doctorProfileSchema = new mongoose.Schema(
 	{
 		userId: {
@@ -48,6 +58,7 @@ const doctorProfileSchema = new mongoose.Schema(
 		bio: { type: String, trim: true },
 		availability: { type: String, trim: true },
 		availabilitySchedule: [availabilitySlotSchema],
+		profilePhoto: profilePhotoSchema,
 		legalDocuments: [legalDocumentSchema],
 		approvalStatus: {
 			type: String,

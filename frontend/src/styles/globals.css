@@ -422,6 +422,9 @@ ul {
   aspect-ratio: 1;
   border-radius: 999px;
   background: radial-gradient(circle at 30% 24%, #9ad9c4 0%, #2a8f6b 58%, #0d5c45 100%);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .hm-doctor-card h3 {
@@ -602,6 +605,9 @@ ul {
 .hm-blog-cover {
   height: 172px;
   background: linear-gradient(145deg, #0d5c45, #1a9e72, #2dc48d);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .hm-blog-content {
@@ -1613,6 +1619,13 @@ ul {
   height: 80px;
   border-radius: 999px;
   background: linear-gradient(135deg, #d8f5e8, #bfead9);
+}
+
+.hm-result-avatar.has-photo,
+.hm-doctor-photo.has-photo {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .hm-online-dot {

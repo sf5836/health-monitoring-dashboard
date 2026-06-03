@@ -156,7 +156,7 @@ export default function AdminLoginPage() {
           {message && <div className="hm-admin-alert hm-admin-alert-success">{message}</div>}
 
           {/* Login Form */}
-          <form onSubmit={onAdminLoginSubmit} className="hm-admin-form">
+          <form onSubmit={onAdminLoginSubmit} className="hm-admin-form" autoComplete="off">
             {/* Email Field */}
             <div className="hm-admin-form-group">
               <label htmlFor="admin-email" className="hm-admin-label">
@@ -165,11 +165,12 @@ export default function AdminLoginPage() {
               <input
                 id="admin-email"
                 type="email"
-                placeholder="admin@example.com"
+                placeholder="Email Address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLocked || loading}
                 className="hm-admin-input"
+                autoComplete="off"
               />
             </div>
 
@@ -182,11 +183,12 @@ export default function AdminLoginPage() {
                 <input
                   id="admin-password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLocked || loading}
                   className="hm-admin-input"
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"

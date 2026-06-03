@@ -12,6 +12,7 @@ export type PublicBlog = {
   author: string;
   date: string;
   excerpt: string;
+  coverImageUrl?: string;
 };
 
 export const publicDoctors: PublicDoctor[] = [
@@ -66,7 +67,8 @@ export const publicBlogs: PublicBlog[] = [
     author: 'Dr. Ayesha Khan - Cardiologist',
     date: 'April 14, 2026',
     excerpt:
-      'Simple routines can significantly lower cardiovascular risk. Learn the habits our specialists recommend for long-term resilience.'
+      'Simple routines can significantly lower cardiovascular risk. Learn the habits our specialists recommend for long-term resilience.',
+    coverImageUrl: 'https://placehold.co/640x360/e8f9f2/0d5c45?text=Heart+Health'
   },
   {
     category: 'Diabetes Care',
@@ -74,7 +76,8 @@ export const publicBlogs: PublicBlog[] = [
     author: 'Dr. Hamza Qureshi - Endocrinologist',
     date: 'April 10, 2026',
     excerpt:
-      'A single number rarely tells the full story. Discover how daily patterns can guide smarter lifestyle and medication decisions.'
+      'A single number rarely tells the full story. Discover how daily patterns can guide smarter lifestyle and medication decisions.',
+    coverImageUrl: 'https://placehold.co/640x360/e8f9f2/0d5c45?text=Diabetes+Care'
   },
   {
     category: 'Preventive Health',
@@ -82,7 +85,8 @@ export const publicBlogs: PublicBlog[] = [
     author: 'Dr. Sana Tariq - Internal Medicine',
     date: 'April 6, 2026',
     excerpt:
-      'From blood pressure to sleep consistency, continuous monitoring helps detect early warning signs before they become emergencies.'
+      'From blood pressure to sleep consistency, continuous monitoring helps detect early warning signs before they become emergencies.',
+    coverImageUrl: 'https://placehold.co/640x360/e8f9f2/0d5c45?text=Preventive+Health'
   },
   {
     category: 'Respiratory Wellness',
@@ -90,7 +94,8 @@ export const publicBlogs: PublicBlog[] = [
     author: 'Dr. Bilal Rafiq - Pulmonologist',
     date: 'April 3, 2026',
     excerpt:
-      'A practical guide to identifying trigger patterns, improving indoor air quality, and building a proactive breathing-care plan.'
+      'A practical guide to identifying trigger patterns, improving indoor air quality, and building a proactive breathing-care plan.',
+    coverImageUrl: 'https://placehold.co/640x360/e8f9f2/0d5c45?text=Respiratory+Wellness'
   },
   {
     category: 'Lifestyle Medicine',
@@ -98,7 +103,8 @@ export const publicBlogs: PublicBlog[] = [
     author: 'Dr. Mariam Asif - Nutrition Specialist',
     date: 'March 29, 2026',
     excerpt:
-      'Nutrition timing and sleep quality deeply affect energy, blood sugar, and mood. Here is a balanced approach that works long-term.'
+      'Nutrition timing and sleep quality deeply affect energy, blood sugar, and mood. Here is a balanced approach that works long-term.',
+    coverImageUrl: 'https://placehold.co/640x360/e8f9f2/0d5c45?text=Lifestyle+Medicine'
   },
   {
     category: 'Primary Care',
@@ -106,6 +112,7 @@ export const publicBlogs: PublicBlog[] = [
     author: 'Dr. Taha Nadeem - General Physician',
     date: 'March 24, 2026',
     excerpt:
-      'Persistent tiredness may point to hidden causes. Understand warning signs and what to track before your next consultation.'
+      'Persistent tiredness may point to hidden causes. Understand warning signs and what to track before your next consultation.',
+    coverImageUrl: 'https://placehold.co/640x360/e8f9f2/0d5c45?text=Primary+Care'
   }
 ];

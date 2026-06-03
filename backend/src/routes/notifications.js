@@ -5,6 +5,7 @@ const validate = require('../middleware/validate');
 const notificationController = require('../controllers/notificationController');
 const {
   notificationIdParamsSchema,
+  conversationIdParamsSchema,
   listNotificationsQuerySchema
 } = require('../schemas/notificationSchemas');
 
@@ -20,5 +21,10 @@ router.patch(
   notificationController.markMyNotificationRead
 );
 router.patch('/me/read-all', notificationController.markAllMyNotificationsRead);
+router.patch(
+  '/me/conversations/:conversationId/read',
+  validate({ params: conversationIdParamsSchema }),
+  notificationController.markConversationNotifications
+);
 
 module.exports = router;

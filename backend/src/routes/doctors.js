@@ -14,6 +14,7 @@ const {
 	createDoctorBlogSchema,
 	updateDoctorBlogSchema,
 	addPatientNoteSchema,
+	updatePatientRiskSchema,
 	updateDoctorProfileSchema,
 	updateDoctorAppointmentSchema
 } = require('../schemas/doctorSchemas');
@@ -57,6 +58,11 @@ router.post(
 	'/me/patients/:patientId/notes',
 	validate({ params: patientIdParamsSchema, body: addPatientNoteSchema }),
 	doctorController.addPatientNote
+);
+router.patch(
+	'/me/patients/:patientId/risk',
+	validate({ params: patientIdParamsSchema, body: updatePatientRiskSchema }),
+	doctorController.updatePatientRisk
 );
 
 router.get('/me/appointments', appointmentController.getMyAppointmentsAsDoctor);

@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "db:dev": "mongod --dbpath ./.mongo-data --bind_ip localhost --port 27017",
     "db:init": "echo \"No db init script configured\"",
     "db:seed": "echo \"No db seed script configured\"",
     "db:seed:admin": "node src/scripts/seedAdmin.js",
+    "db:seed:reviews": "node src/scripts/seedReviews.js",
     "test": "echo \"No tests configured\"",
     "test:unit": "echo \"No unit tests configured\"",
     "test:integration": "echo \"No integration tests configured\"",

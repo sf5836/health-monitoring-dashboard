@@ -263,12 +263,28 @@ export default function DoctorPatientDetailPage() {
 
       <article className="doctor-card doctor-patient-header-card">
         <div className="doctor-header-main">
-          <div className="doctor-avatar-large">{detail.user.fullName.slice(0, 2).toUpperCase()}</div>
+          <div
+            className={`doctor-avatar-large ${detail.profile.profilePhotoUrl ? 'has-photo' : ''}`}
+            style={
+              detail.profile.profilePhotoUrl
+                ? { backgroundImage: `url(${detail.profile.profilePhotoUrl})` }
+                : undefined
+            }
+          >
+            {detail.profile.profilePhotoUrl
+              ? null
+              : detail.user.fullName.slice(0, 2).toUpperCase()}
+          </div>
           <div>
             <h3>{detail.user.fullName}</h3>
             <p>{detail.user.email}</p>
             <div className="doctor-tag-row">
               {detail.profile.bloodGroup ? <span className="doctor-data-chip">Blood: {detail.profile.bloodGroup}</span> : null}
+              {detail.profile.riskOverride?.level ? (
+                <span className={`doctor-data-chip ${detail.profile.riskOverride.level === 'high' ? 'alert' : ''}`}>
+                  Manual Risk: {detail.profile.riskOverride.level}
+                </span>
+              ) : null}
               {detail.profile.allergies.map((allergy) => (
                 <span key={allergy} className="doctor-data-chip alert">
                   {allergy}

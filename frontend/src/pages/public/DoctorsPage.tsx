@@ -6,6 +6,7 @@ import {
   type PublicDoctorListingQuery
 } from '../../services/publicContentService';
 import { ROUTE_PATHS } from '../../routes/routePaths';
+import { subscribeProfilePhotoUpdates } from '../../services/profilePhotoEvents';
 
 const DEFAULT_SPECIALIZATIONS = [
   'Cardiologist',
@@ -129,6 +130,20 @@ export default function DoctorsPage() {
       cancelled = true;
     };
   }, [appliedFilters, sort, page]);
+
+  useEffect(() => {
+    return subscribeProfilePhotoUpdates((update) => {
+      if (update.role !== 'doctor') return;
+      setListing((previous) => ({
+        ...previous,
+        doctors: previous.doctors.map((doctor) =>
+          doctor.id === update.userId
+            ? { ...doctor, profilePhotoUrl: update.profilePhotoUrl }
+            : doctor
+        )
+      }));
+    });
+  }, []);
 
   const paginationItems = useMemo(() => buildPagination(page, listing.totalPages), [page, listing.totalPages]);
 
@@ -346,7 +361,15 @@ export default function DoctorsPage() {
                 {listing.doctors.map((doctor) => (
                   <article key={doctor.id} className="hm-doctor-result-card">
                     <div className="hm-result-avatar-wrap">
-                      <div className="hm-result-avatar" aria-hidden="true" />
+                      <div
+                        className={`hm-result-avatar ${doctor.profilePhotoUrl ? 'has-photo' : ''}`}
+                        aria-hidden="true"
+                        style={
+                          doctor.profilePhotoUrl
+                            ? { backgroundImage: `url(${doctor.profilePhotoUrl})` }
+                            : undefined
+                        }
+                      />
                       <span className="hm-online-dot" />
                     </div>
 

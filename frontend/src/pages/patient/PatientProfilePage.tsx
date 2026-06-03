@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react';
 import {
   getCurrentUser,
   getPatientProfile,
@@ -22,6 +22,35 @@ type ProfileFormState = {
   emergencyRelationship: string;
   emergencyPhone: string;
 };
+
+type UploadingMedicalDocument = {
+  label: string;
+  fileName: string;
+  contentType: string;
+  dataBase64: string;
+};
+
+type ProfilePhotoUpload = {
+  fileName: string;
+  contentType: string;
+  dataBase64: string;
+  previewUrl: string;
+};
+
+type MedicalDocumentItem = NonNullable<PatientProfile['medicalDocuments']>[number];
+
+const GENDER_OPTIONS = ['Male', 'Female', 'Other', 'Prefer not to say'] as const;
+
+const BLOOD_GROUP_OPTIONS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const;
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Unable to read file'));
+    reader.readAsDataURL(file);
+  });
+}
 
 function parseCsv(value: string): string[] {
   return value
@@ -78,6 +107,11 @@ export default function PatientProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [medicalDocuments, setMedicalDocuments] = useState<MedicalDocumentItem[]>([]);
+  const [newMedicalDocuments, setNewMedicalDocuments] = useState<UploadingMedicalDocument[]>([]);
+  const [medicalDocumentLabel, setMedicalDocumentLabel] = useState('');
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState('');
+  const [profilePhotoUpload, setProfilePhotoUpload] = useState<ProfilePhotoUpload | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,6 +122,8 @@ export default function PatientProfilePage() {
         if (cancelled) return;
 
         setForm(mapToForm(profile, user));
+        setMedicalDocuments(profile.medicalDocuments || []);
+        setProfilePhotoUrl(profile.profilePhotoUrl || '');
         setError('');
       } catch {
         if (cancelled) return;
@@ -106,6 +142,61 @@ export default function PatientProfilePage() {
     };
   }, []);
 
+  async function handleProfilePhotoChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const dataBase64 = await fileToBase64(file);
+      setProfilePhotoUpload({
+        fileName: file.name,
+        contentType: file.type || 'image/jpeg',
+        dataBase64,
+        previewUrl: dataBase64
+      });
+      setProfilePhotoUrl(dataBase64);
+      setSuccess('Profile photo ready to upload. Save to apply.');
+      setError('');
+    } catch {
+      setError('Unable to read the selected image.');
+    } finally {
+      event.target.value = '';
+    }
+  }
+
+  async function handleMedicalDocumentsChange(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    try {
+      const uploaded = await Promise.all(
+        files.map(async (file) => ({
+          label: medicalDocumentLabel.trim() || file.name,
+          fileName: file.name,
+          contentType: file.type || 'application/pdf',
+          dataBase64: await fileToBase64(file)
+        }))
+      );
+
+      setNewMedicalDocuments((current) => [...current, ...uploaded]);
+      setSuccess('Medical document added to the upload queue.');
+      setError('');
+    } catch {
+      setError('Unable to read the selected file(s).');
+    } finally {
+      event.target.value = '';
+    }
+  }
+
+  function downloadDocument(document: MedicalDocumentItem) {
+    if (!document.fileUrl) return;
+    window.open(document.fileUrl, '_blank', 'noopener,noreferrer');
+  }
+
+  function removeQueuedDocument(index: number) {
+    setNewMedicalDocuments((current) => current.filter((_, currentIndex) => currentIndex !== index));
+  }
+
   async function handleSaveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
@@ -113,7 +204,7 @@ export default function PatientProfilePage() {
 
     try {
       setSaving(true);
-      await updatePatientProfile({
+      const updated = await updatePatientProfile({
         dob: form.dob ? new Date(form.dob).toISOString() : undefined,
         gender: form.gender || undefined,
         bloodGroup: form.bloodGroup || undefined,
@@ -122,6 +213,14 @@ export default function PatientProfilePage() {
         allergies: parseCsv(form.allergiesText),
         medications: parseCsv(form.medicationsText),
         medicalHistory: form.medicalHistory || undefined,
+        profilePhoto: profilePhotoUpload
+          ? {
+              fileName: profilePhotoUpload.fileName,
+              contentType: profilePhotoUpload.contentType,
+              dataBase64: profilePhotoUpload.dataBase64
+            }
+          : undefined,
+        medicalDocuments: newMedicalDocuments.length > 0 ? newMedicalDocuments : undefined,
         emergencyContact: {
           name: form.emergencyName || undefined,
           relationship: form.emergencyRelationship || undefined,
@@ -130,6 +229,10 @@ export default function PatientProfilePage() {
       });
 
       setSuccess('Profile updated successfully.');
+      setMedicalDocuments((current) => [...current, ...newMedicalDocuments]);
+      setNewMedicalDocuments([]);
+      setProfilePhotoUpload(null);
+      setProfilePhotoUrl(updated.profilePhotoUrl || profilePhotoUpload?.previewUrl || profilePhotoUrl);
     } catch {
       setError('Unable to update profile.');
     } finally {
@@ -154,6 +257,29 @@ export default function PatientProfilePage() {
           <p className="patient-page-status">Loading profile...</p>
         ) : (
           <form className="patient-form-grid" onSubmit={handleSaveProfile}>
+            <div className="patient-form-span-2 patient-profile-photo-row">
+              <div className="patient-profile-photo">
+                {profilePhotoUrl ? (
+                  <img src={profilePhotoUrl} alt="Patient profile" />
+                ) : (
+                  <span>{(form.fullName || 'PT').slice(0, 2).toUpperCase()}</span>
+                )}
+              </div>
+              <div className="patient-profile-photo-actions">
+                <h3>Profile photo</h3>
+                <p>Upload a clear photo (PNG, JPG, WEBP).</p>
+                <label className="patient-secondary-button" htmlFor="patient-profile-photo">
+                  Choose photo
+                </label>
+                <input
+                  id="patient-profile-photo"
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  onChange={handleProfilePhotoChange}
+                  hidden
+                />
+              </div>
+            </div>
             <label>
               Full Name
               <input value={form.fullName} readOnly />
@@ -180,19 +306,32 @@ export default function PatientProfilePage() {
 
             <label>
               Gender
-              <input
+              <select
                 value={form.gender}
                 onChange={(event) => setForm((previous) => ({ ...previous, gender: event.target.value }))}
-                placeholder="Male / Female / Other"
-              />
+              >
+                <option value="">Select gender</option>
+                {GENDER_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label>
               Blood Group
-              <input
+              <select
                 value={form.bloodGroup}
                 onChange={(event) => setForm((previous) => ({ ...previous, bloodGroup: event.target.value }))}
-              />
+              >
+                <option value="">Select blood group</option>
+                {BLOOD_GROUP_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label>
@@ -243,6 +382,68 @@ export default function PatientProfilePage() {
                 }
               />
             </label>
+
+            <div className="patient-form-span-2 patient-medical-documents-section">
+              <div className="patient-medical-documents-head">
+                <div>
+                  <strong>Medical History Documents</strong>
+                  <p>Upload PDFs, scans, or pictures of reports, discharge summaries, or previous records.</p>
+                </div>
+              </div>
+
+              <div className="patient-medical-upload-grid">
+                <label>
+                  Document label
+                  <input
+                    value={medicalDocumentLabel}
+                    onChange={(event) => setMedicalDocumentLabel(event.target.value)}
+                    placeholder="For example: Lab report"
+                  />
+                </label>
+
+                <label>
+                  Upload files
+                  <input
+                    type="file"
+                    accept="application/pdf,image/png,image/jpeg"
+                    multiple
+                    onChange={handleMedicalDocumentsChange}
+                  />
+                </label>
+              </div>
+
+              {medicalDocuments.length > 0 ? (
+                <div className="patient-medical-documents-list">
+                  <h4>Saved documents</h4>
+                  <ul>
+                    {medicalDocuments.map((document) => (
+                      <li key={document.id || `${document.fileName}-${document.uploadedAt || ''}`}>
+                        <button type="button" onClick={() => downloadDocument(document)}>
+                          {document.label || document.fileName || 'Medical document'}
+                        </button>
+                        <span>{document.contentType || 'File'}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              {newMedicalDocuments.length > 0 ? (
+                <div className="patient-medical-documents-list">
+                  <h4>Queued uploads</h4>
+                  <ul>
+                    {newMedicalDocuments.map((document, index) => (
+                      <li key={`${document.fileName}-${index}`}>
+                        <span>{document.label || document.fileName}</span>
+                        <button type="button" onClick={() => removeQueuedDocument(index)}>
+                          Remove
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
 
             <label>
               Emergency Contact Name

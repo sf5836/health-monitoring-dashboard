@@ -21,6 +21,9 @@ const stats = [
   { value: '2,000+', label: 'Articles' }
 ];
 
+const BLOG_FALLBACK_COVER = 'https://placehold.co/640x360/e8f9f2/0d5c45?text=Health+Blog';
+const DOCTOR_FALLBACK_AVATAR = 'https://placehold.co/160x160/e8f9f2/0d5c45?text=Doctor';
+
 const quickLinks = ['Home', 'Doctors', 'Blogs', 'About', 'Contact'];
 const specializations = ['Cardiology', 'Endocrinology', 'General Medicine', 'Nutrition', 'Pulmonology'];
 
@@ -305,7 +308,11 @@ export default function HomePage() {
           <div className="hm-card-grid hm-card-grid-3">
             {featuredDoctors.map((doctor) => (
               <article key={doctor.id} className="hm-card hm-doctor-card">
-                <div className="hm-doctor-avatar" aria-hidden="true" />
+                <div
+                  className="hm-doctor-avatar"
+                  aria-hidden="true"
+                  style={{ backgroundImage: `url(${doctor.profilePhotoUrl || DOCTOR_FALLBACK_AVATAR})` }}
+                />
                 <h3>{doctor.name}</h3>
                 <span className="hm-pill">{doctor.specialization}</span>
                 <StarRow />
@@ -384,7 +391,11 @@ export default function HomePage() {
           <div className="hm-card-grid hm-card-grid-3">
             {featuredBlogs.map((blog) => (
               <article key={blog.id} className="hm-card hm-blog-card">
-                <div className="hm-blog-cover" aria-hidden="true" />
+                <div
+                  className="hm-blog-cover"
+                  aria-hidden="true"
+                  style={{ backgroundImage: `url(${blog.coverImageUrl || BLOG_FALLBACK_COVER})` }}
+                />
                 <div className="hm-blog-content">
                   <span className="hm-pill">{blog.category}</span>
                   <h3>{blog.title}</h3>

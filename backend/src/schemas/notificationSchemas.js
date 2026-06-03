@@ -4,6 +4,10 @@ const notificationIdParamsSchema = z.object({
   notificationId: objectId
 });
 
+const conversationIdParamsSchema = z.object({
+  conversationId: objectId
+});
+
 const listNotificationsQuerySchema = z.object({
   since: z.string().datetime().optional(),
   limit: z.coerce.number().int().min(1).max(100).optional()
@@ -11,5 +15,6 @@ const listNotificationsQuerySchema = z.object({
 
 module.exports = {
   notificationIdParamsSchema,
+  conversationIdParamsSchema,
   listNotificationsQuerySchema
 };

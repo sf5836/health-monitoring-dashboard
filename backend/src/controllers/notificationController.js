@@ -2,7 +2,8 @@ const Notification = require('../models/Notification');
 const {
   listNotifications,
   markNotificationRead,
-  markAllNotificationsRead
+  markAllNotificationsRead,
+  markConversationNotificationsRead
 } = require('../services/notificationService');
 
 async function getMyNotifications(req, res, next) {
@@ -73,9 +74,26 @@ async function markAllMyNotificationsRead(req, res, next) {
   }
 }
 
+async function markConversationNotifications(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const { conversationId } = req.params;
+
+    await markConversationNotificationsRead({ userId, conversationId });
+
+    res.json({
+      success: true,
+      message: 'Conversation notifications marked as read'
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getMyNotifications,
   getMyUnreadCount,
   markMyNotificationRead,
-  markAllMyNotificationsRead
+  markAllMyNotificationsRead,
+  markConversationNotifications
 };

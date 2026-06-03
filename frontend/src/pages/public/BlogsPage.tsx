@@ -4,6 +4,8 @@ import { publicBlogs } from '../../data/publicContent';
 import { getPublicBlogs, type PublicBlogCard } from '../../services/publicContentService';
 import { ROUTE_PATHS } from '../../routes/routePaths';
 
+const BLOG_FALLBACK_COVER = 'https://placehold.co/640x360/e8f9f2/0d5c45?text=Health+Blog';
+
 export default function BlogsPage() {
   const [blogs, setBlogs] = useState<PublicBlogCard[]>(
     publicBlogs.map((blog, index) => ({
@@ -12,7 +14,8 @@ export default function BlogsPage() {
       title: blog.title,
       author: blog.author,
       date: blog.date,
-      excerpt: blog.excerpt
+      excerpt: blog.excerpt,
+      coverImageUrl: blog.coverImageUrl
     }))
   );
 
@@ -53,7 +56,11 @@ export default function BlogsPage() {
         <div className="hm-card-grid hm-card-grid-3">
           {blogs.map((blog) => (
             <article key={blog.id} className="hm-card hm-blog-card">
-              <div className="hm-blog-cover" aria-hidden="true" />
+              <div
+                className="hm-blog-cover"
+                aria-hidden="true"
+                style={{ backgroundImage: `url(${blog.coverImageUrl || BLOG_FALLBACK_COVER})` }}
+              />
               <div className="hm-blog-content">
                 <span className="hm-pill">{blog.category}</span>
                 <h3>{blog.title}</h3>

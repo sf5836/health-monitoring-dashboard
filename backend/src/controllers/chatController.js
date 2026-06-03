@@ -1,5 +1,6 @@
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
+const DoctorProfile = require('../models/DoctorProfile');
 const PatientProfile = require('../models/PatientProfile');
 const User = require('../models/User');
 const { createNotification } = require('../services/notificationService');
@@ -59,6 +60,58 @@ async function ensureConversationAccessAllowed(conversation, requester) {
   throw error;
 }
 
+async function attachParticipantPhotos(conversations) {
+  const ids = new Set();
+
+  conversations.forEach((conversation) => {
+    (conversation.participantIds || []).forEach((participant) => {
+      if (!participant) return;
+      if (typeof participant === 'string') {
+        ids.add(String(participant));
+        return;
+      }
+      const id = participant._id || participant.id;
+      if (id) ids.add(String(id));
+    });
+  });
+
+  if (ids.size === 0) return conversations;
+
+  const idList = Array.from(ids);
+
+  const [doctorProfiles, patientProfiles] = await Promise.all([
+    DoctorProfile.find({ userId: { $in: idList } })
+      .select('userId profilePhoto')
+      .lean(),
+    PatientProfile.find({ userId: { $in: idList } })
+      .select('userId profilePhoto')
+      .lean()
+  ]);
+
+  const profilePhotoMap = new Map();
+  doctorProfiles.forEach((profile) => {
+    profilePhotoMap.set(String(profile.userId), profile.profilePhoto);
+  });
+  patientProfiles.forEach((profile) => {
+    if (!profilePhotoMap.has(String(profile.userId))) {
+      profilePhotoMap.set(String(profile.userId), profile.profilePhoto);
+    }
+  });
+
+  return conversations.map((conversation) => ({
+    ...conversation,
+    participantIds: (conversation.participantIds || []).map((participant) => {
+      if (!participant || typeof participant === 'string') return participant;
+      const id = String(participant._id || participant.id || '');
+      const profilePhoto = id ? profilePhotoMap.get(id) : undefined;
+      return {
+        ...participant,
+        profilePhoto
+      };
+    })
+  }));
+}
+
 async function createOrGetConversation(req, res, next) {
   try {
     const requester = { id: req.user.id, role: req.user.role };
@@ -113,10 +166,12 @@ async function createOrGetConversation(req, res, next) {
       .populate('participantIds', 'fullName email role')
       .lean();
 
+    const [hydratedConversation] = await attachParticipantPhotos([populatedConversation]);
+
     res.status(201).json({
       success: true,
       message: 'Conversation ready',
-      data: { conversation: populatedConversation }
+      data: { conversation: hydratedConversation }
     });
   } catch (error) {
     next(error);
@@ -132,9 +187,11 @@ async function getMyConversations(req, res, next) {
       .populate('participantIds', 'fullName email role')
       .lean();
 
+    const hydratedConversations = await attachParticipantPhotos(conversations);
+
     res.json({
       success: true,
-      data: { conversations }
+      data: { conversations: hydratedConversations }
     });
   } catch (error) {
     next(error);

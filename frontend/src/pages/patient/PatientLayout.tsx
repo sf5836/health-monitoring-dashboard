@@ -16,7 +16,7 @@ import { formatDateTime, greetingByTime } from './patientUi';
 type NavItem = {
   label: string;
   path: string;
-  badgeKey?: 'messages' | 'notifications';
+  badgeKey?: 'messages';
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -26,8 +26,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'My Doctors', path: ROUTE_PATHS.patient.doctors },
   { label: 'Appointments', path: ROUTE_PATHS.patient.appointments },
   { label: 'Prescriptions', path: ROUTE_PATHS.patient.prescriptions },
-  { label: 'Messages', path: ROUTE_PATHS.patient.messages, badgeKey: 'messages' },
-  { label: 'Notifications', path: ROUTE_PATHS.patient.notifications, badgeKey: 'notifications' }
+  { label: 'Messages', path: ROUTE_PATHS.patient.messages, badgeKey: 'messages' }
 ];
 
 export default function PatientLayout() {
@@ -59,12 +58,10 @@ export default function PatientLayout() {
         setFullName(user.fullName || 'Patient User');
         sessionStore.setFullName(user.fullName || 'Patient User');
         sessionStore.setUserId(user.id);
-
         setNotifications(notificationResult.notifications);
         setUnreadCount(notificationResult.unreadCount);
       } catch {
         if (!isMounted) return;
-        setNotifications([]);
       }
     }
 
@@ -119,6 +116,7 @@ export default function PatientLayout() {
             : item
         )
       );
+      setUnreadCount((previous) => Math.max(previous - 1, 0));
     };
 
     const onNotificationReadAll = () => {
@@ -186,6 +184,8 @@ export default function PatientLayout() {
     return match?.label || 'Dashboard';
   }, [location.pathname]);
 
+  const notificationButtonLabel = isNotificationPanelOpen ? 'Close notifications' : 'Open notifications';
+
   async function handleNotificationRead(notificationId: string) {
     try {
       await markNotificationRead(notificationId);
@@ -225,9 +225,7 @@ export default function PatientLayout() {
             const badgeCount =
               item.badgeKey === 'messages'
                 ? messageCount
-                : item.badgeKey === 'notifications'
-                  ? unreadCount
-                  : 0;
+                : 0;
 
             return (
               <NavLink
@@ -285,56 +283,66 @@ export default function PatientLayout() {
             >
               {isMobileSidebarOpen ? 'Close Menu' : 'Menu'}
             </button>
-            <button
-              type="button"
-              className="patient-notification-button"
-              onClick={() => setIsNotificationPanelOpen((previous) => !previous)}
-            >
-              Notifications
-              {unreadCount > 0 ? <span className="patient-badge">{unreadCount}</span> : null}
-            </button>
+            <div className="patient-notification-wrap">
+              <button
+                type="button"
+                className="patient-notification-button"
+                aria-label={notificationButtonLabel}
+                aria-expanded={isNotificationPanelOpen}
+                aria-controls="patient-notification-dropdown"
+                onClick={() => setIsNotificationPanelOpen((previous) => !previous)}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" className="patient-notification-icon">
+                  <path
+                    d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm8-6.5c-1.1-1.1-2-2.1-2-5V9a6 6 0 1 0-12 0v1.5c0 2.9-.9 3.9-2 5-.4.4-.5 1-.2 1.5.2.5.7.8 1.3.8h15.8c.6 0 1.1-.3 1.3-.8.3-.5.2-1.1-.2-1.5Z"
+                    fill="currentColor"
+                  />
+                </svg>
+                {unreadCount > 0 ? <span className="patient-badge">{unreadCount}</span> : null}
+              </button>
+
+              {isNotificationPanelOpen ? (
+                <section className="patient-notification-panel" id="patient-notification-dropdown">
+                  <div className="patient-notification-head">
+                    <h2>Notifications</h2>
+                    <button type="button" onClick={handleReadAllNotifications}>
+                      Mark all read
+                    </button>
+                  </div>
+                  <ul className="patient-notification-list">
+                    {notifications.length === 0 ? (
+                      <li className="patient-notification-item">
+                        <p>No notifications yet.</p>
+                      </li>
+                    ) : (
+                      notifications.map((notification) => (
+                        <li
+                          key={notification.id}
+                          className={`patient-notification-item ${notification.isRead ? '' : 'is-unread'}`}
+                        >
+                          <div>
+                            <h3>{notification.title}</h3>
+                            {notification.body ? <p>{notification.body}</p> : null}
+                            <small>{formatDateTime(notification.createdAt)}</small>
+                          </div>
+                          {!notification.isRead ? (
+                            <button
+                              type="button"
+                              className="patient-link-button"
+                              onClick={() => handleNotificationRead(notification.id)}
+                            >
+                              Mark read
+                            </button>
+                          ) : null}
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                </section>
+              ) : null}
+            </div>
           </div>
         </header>
-
-        {isNotificationPanelOpen ? (
-          <section className="patient-notification-panel">
-            <div className="patient-notification-head">
-              <h2>Notifications</h2>
-              <button type="button" onClick={handleReadAllNotifications}>
-                Mark all read
-              </button>
-            </div>
-            <ul className="patient-notification-list">
-              {notifications.length === 0 ? (
-                <li className="patient-notification-item">
-                  <p>No notifications yet.</p>
-                </li>
-              ) : (
-                notifications.map((notification) => (
-                  <li
-                    key={notification.id}
-                    className={`patient-notification-item ${notification.isRead ? '' : 'is-unread'}`}
-                  >
-                    <div>
-                      <h3>{notification.title}</h3>
-                      {notification.body ? <p>{notification.body}</p> : null}
-                      <small>{formatDateTime(notification.createdAt)}</small>
-                    </div>
-                    {!notification.isRead ? (
-                      <button
-                        type="button"
-                        className="patient-link-button"
-                        onClick={() => handleNotificationRead(notification.id)}
-                      >
-                        Mark read
-                      </button>
-                    ) : null}
-                  </li>
-                ))
-              )}
-            </ul>
-          </section>
-        ) : null}
 
         <main className="patient-content">
           <Outlet />

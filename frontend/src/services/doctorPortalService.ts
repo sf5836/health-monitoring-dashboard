@@ -1,4 +1,6 @@
 import { apiRequest } from './apiClient';
+import { APP_ENV } from '../config/env';
+import { emitProfilePhotoUpdate } from './profilePhotoEvents';
 
 export type RiskLevel = 'normal' | 'medium' | 'high';
 
@@ -36,6 +38,12 @@ type BackendDoctorProfile = {
     startTime?: string;
     endTime?: string;
   }>;
+  profilePhoto?: {
+    fileName?: string;
+    fileUrl?: string;
+    contentType?: string;
+    uploadedAt?: string;
+  };
   legalDocuments?: Array<{
     label?: string;
     fileName?: string;
@@ -55,6 +63,15 @@ type BackendPatientProfile = {
   allergies?: string[];
   medications?: string[];
   medicalHistory?: string;
+  profilePhoto?: {
+    fileUrl?: string;
+  };
+  riskOverride?: {
+    level?: 'normal' | 'medium' | 'high';
+    note?: string;
+    updatedAt?: string;
+    updatedBy?: string;
+  };
   connectedDoctorIds?: Array<string | BackendUser>;
   doctorNotes?: BackendDoctorNote[];
   updatedAt?: string;
@@ -191,6 +208,7 @@ export type DoctorProfile = {
     startTime: string;
     endTime: string;
   }>;
+  profilePhotoUrl?: string;
   legalDocuments: Array<{
     label?: string;
     fileName: string;
@@ -223,6 +241,13 @@ export type DoctorPatientSummary = {
   allergies: string[];
   medications: string[];
   medicalHistory?: string;
+  profilePhotoUrl?: string;
+  riskOverride?: {
+    level: 'normal' | 'medium' | 'high';
+    note?: string;
+    updatedAt?: string;
+    updatedBy?: string;
+  };
   updatedAt?: string;
 };
 
@@ -299,6 +324,13 @@ export type DoctorPatientDetail = {
     allergies: string[];
     medications: string[];
     medicalHistory?: string;
+    profilePhotoUrl?: string;
+    riskOverride?: {
+      level: 'normal' | 'medium' | 'high';
+      note?: string;
+      updatedAt?: string;
+      updatedBy?: string;
+    };
     doctorNotes: DoctorNote[];
   };
   doctorNotes: DoctorNote[];
@@ -340,6 +372,23 @@ export type DoctorNotification = {
   isRead: boolean;
   createdAt?: string;
 };
+
+function backendOrigin(): string {
+  try {
+    const resolved = new URL(APP_ENV.apiBaseUrl, window.location.origin);
+    return resolved.origin;
+  } catch {
+    return window.location.origin;
+  }
+}
+
+function normalizeAssetUrl(fileUrl?: string): string {
+  const raw = String(fileUrl || '').trim();
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith('/')) return `${backendOrigin()}${raw}`;
+  return `${backendOrigin()}/${raw}`;
+}
 
 function mapDoctorUser(value?: BackendUser): DoctorUser {
   return {
@@ -432,6 +481,15 @@ function mapPatientSummary(profile: BackendPatientProfile): DoctorPatientSummary
     allergies: profile.allergies || [],
     medications: profile.medications || [],
     medicalHistory: profile.medicalHistory,
+    profilePhotoUrl: normalizeAssetUrl(profile.profilePhoto?.fileUrl),
+    riskOverride: profile.riskOverride?.level
+      ? {
+          level: profile.riskOverride.level,
+          note: profile.riskOverride.note,
+          updatedAt: profile.riskOverride.updatedAt,
+          updatedBy: profile.riskOverride.updatedBy
+        }
+      : undefined,
     updatedAt: profile.updatedAt
   };
 }
@@ -506,12 +564,48 @@ export async function getDoctorPatientDetail(patientId: string): Promise<DoctorP
       allergies: profile.allergies || [],
       medications: profile.medications || [],
       medicalHistory: profile.medicalHistory,
+      profilePhotoUrl: normalizeAssetUrl(profile.profilePhoto?.fileUrl),
+      riskOverride: profile.riskOverride?.level
+        ? {
+            level: profile.riskOverride.level,
+            note: profile.riskOverride.note,
+            updatedAt: profile.riskOverride.updatedAt,
+            updatedBy: profile.riskOverride.updatedBy
+          }
+        : undefined,
       doctorNotes
     },
     doctorNotes,
     latestVitals: (payload.latestVitals || []).map(mapVital),
     recentAppointments: (payload.recentAppointments || []).map(mapAppointment),
     prescriptionCount: payload.prescriptionCount || 0
+  };
+}
+
+export async function updateDoctorPatientRisk(
+  patientId: string,
+  payload: { level: 'normal' | 'medium' | 'high'; note?: string }
+): Promise<DoctorPatientDetail['profile']['riskOverride']> {
+  const response = await apiRequest<
+    ApiEnvelope<{
+      profile: BackendPatientProfile;
+    }>
+  >(`/doctors/me/patients/${patientId}/risk`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+
+  const profile = response.data.profile || {};
+
+  if (!profile.riskOverride?.level) {
+    return undefined;
+  }
+
+  return {
+    level: profile.riskOverride.level,
+    note: profile.riskOverride.note,
+    updatedAt: profile.riskOverride.updatedAt,
+    updatedBy: profile.riskOverride.updatedBy
   };
 }
 
@@ -568,6 +662,7 @@ export async function getDoctorProfile(): Promise<DoctorProfile> {
     fee: doctorProfile.fee,
     bio: doctorProfile.bio,
     availability: doctorProfile.availability,
+    profilePhotoUrl: normalizeAssetUrl(doctorProfile.profilePhoto?.fileUrl),
     availabilitySchedule: (doctorProfile.availabilitySchedule || []).map((slot) => ({
       day: (slot.day || 'monday') as DoctorProfile['availabilitySchedule'][number]['day'],
       startTime: slot.startTime || '09:00',
@@ -602,6 +697,11 @@ export async function updateDoctorProfile(payload: {
     startTime: string;
     endTime: string;
   }>;
+  profilePhoto?: {
+    fileName: string;
+    contentType: string;
+    dataBase64: string;
+  };
   legalDocuments?: Array<{
     label?: string;
     fileName: string;
@@ -624,7 +724,7 @@ export async function updateDoctorProfile(payload: {
   const data = response.data.profile || {};
   const doctorProfile = data.doctorProfile || {};
 
-  return {
+  const mappedProfile = {
     user: mapDoctorUser(data.user),
     specialization: doctorProfile.specialization,
     licenseNumber: doctorProfile.licenseNumber,
@@ -634,6 +734,7 @@ export async function updateDoctorProfile(payload: {
     fee: doctorProfile.fee,
     bio: doctorProfile.bio,
     availability: doctorProfile.availability,
+    profilePhotoUrl: normalizeAssetUrl(doctorProfile.profilePhoto?.fileUrl),
     availabilitySchedule: (doctorProfile.availabilitySchedule || []).map((slot) => ({
       day: (slot.day || 'monday') as DoctorProfile['availabilitySchedule'][number]['day'],
       startTime: slot.startTime || '09:00',
@@ -650,6 +751,16 @@ export async function updateDoctorProfile(payload: {
       })),
     approvalStatus: doctorProfile.approvalStatus
   };
+
+  if (mappedProfile.user?.id) {
+    emitProfilePhotoUpdate({
+      role: 'doctor',
+      userId: mappedProfile.user.id,
+      profilePhotoUrl: mappedProfile.profilePhotoUrl || ''
+    });
+  }
+
+  return mappedProfile;
 }
 
 export async function getDoctorAppointments(): Promise<DoctorAppointment[]> {

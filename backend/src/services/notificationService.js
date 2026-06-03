@@ -60,6 +60,32 @@ async function markAllNotificationsRead({ userId }) {
 	}
 }
 
+async function markConversationNotificationsRead({ userId, conversationId }) {
+	const match = {
+		userId,
+		isRead: false,
+		type: 'chat',
+		'metadata.conversationId': String(conversationId)
+	};
+
+	const notifications = await Notification.find(match).select('_id').lean();
+	if (notifications.length === 0) return [];
+
+	await Notification.updateMany(match, { $set: { isRead: true } });
+
+	const io = getIO();
+	if (io) {
+		notifications.forEach((notification) => {
+			io.to(`room:user:${String(userId)}`).emit('notification:read', {
+				notificationId: String(notification._id)
+			});
+		});
+		await emitUnreadCount(io, userId);
+	}
+
+	return notifications;
+}
+
 async function listNotifications({ userId, since, limit = 20 }) {
 	const query = { userId };
 	const sinceDate = since ? new Date(since) : null;
@@ -85,5 +111,6 @@ module.exports = {
 	createNotification,
 	markNotificationRead,
 	markAllNotificationsRead,
+	markConversationNotificationsRead,
 	listNotifications
 };

@@ -14,6 +14,39 @@ const updatePatientProfileSchema = z
     allergies: z.array(z.string()).optional(),
     medications: z.array(z.string()).optional(),
     medicalHistory: z.string().optional(),
+    profilePhoto: z
+      .object({
+        fileName: z.string().min(3),
+        contentType: z
+          .string()
+          .refine(
+            (value) =>
+              ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(
+                String(value).toLowerCase()
+              ),
+            'Profile photo must be an image'
+          ),
+        dataBase64: z.string().min(16)
+      })
+      .optional(),
+    medicalDocuments: z
+      .array(
+        z.object({
+          label: z.string().optional(),
+          fileName: z.string().min(3),
+          contentType: z
+            .string()
+            .refine(
+              (value) =>
+                ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'].includes(
+                  String(value).toLowerCase()
+                ),
+              'Document must be a PDF or image'
+            ),
+          dataBase64: z.string().min(16)
+        })
+      )
+      .optional(),
     emergencyContact: z
       .object({
         name: z.string().optional(),

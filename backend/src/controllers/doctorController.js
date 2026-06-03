@@ -107,6 +107,33 @@ async function uploadLegalDocuments(legalDocuments) {
   return uploaded;
 }
 
+async function uploadProfilePhoto(profilePhoto) {
+  if (!profilePhoto) {
+    return undefined;
+  }
+
+  const rawBase64 = String(profilePhoto.dataBase64 || '').trim();
+  const normalizedBase64 = rawBase64.includes(',') ? rawBase64.split(',').pop() : rawBase64;
+  const buffer = Buffer.from(normalizedBase64 || '', 'base64');
+
+  if (!buffer.length) {
+    throw badRequest('Invalid profile photo payload');
+  }
+
+  const upload = await uploadBuffer({
+    fileName: profilePhoto.fileName,
+    _buffer: buffer,
+    contentType: profilePhoto.contentType || 'image/jpeg'
+  });
+
+  return {
+    fileName: upload.fileName,
+    fileUrl: upload.url,
+    contentType: upload.contentType,
+    uploadedAt: new Date()
+  };
+}
+
 async function getPublicDoctors(req, res, next) {
   try {
     const limit = Math.min(Math.max(Number(req.query.limit || 12), 1), 60);
@@ -217,6 +244,7 @@ async function getPublicDoctors(req, res, next) {
       experienceYears: profile.experienceYears,
       hospital: profile.hospital,
       fee: profile.fee,
+      profilePhoto: profile.profilePhoto,
       rating: profile.rating ?? 5,
       reviewsCount: profile.reviewsCount ?? 0,
       bio: profile.bio,
@@ -286,6 +314,7 @@ async function getPublicDoctorById(req, res, next) {
           experienceYears: profile.experienceYears,
           hospital: profile.hospital,
           fee: profile.fee,
+          profilePhoto: profile.profilePhoto,
           rating: profile.rating ?? 5,
           reviewsCount: profile.reviewsCount ?? 0,
           bio: profile.bio,
@@ -526,6 +555,36 @@ async function addPatientNote(req, res, next) {
   }
 }
 
+async function updatePatientRisk(req, res, next) {
+  try {
+    const doctorId = req.user.id;
+    const { patientId } = req.params;
+    const { level, note } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(patientId)) {
+      throw badRequest('Invalid patientId');
+    }
+
+    const profile = await ensureConnectedPatient(doctorId, patientId);
+    profile.riskOverride = {
+      level,
+      note: note ? String(note).trim() : undefined,
+      updatedAt: new Date(),
+      updatedBy: doctorId
+    };
+
+    await profile.save();
+
+    res.json({
+      success: true,
+      message: 'Patient risk updated successfully',
+      data: { profile }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function getMyProfile(req, res, next) {
   try {
     const doctorId = req.user.id;
@@ -572,6 +631,7 @@ async function updateMyProfile(req, res, next) {
       bio,
       availability,
       availabilitySchedule,
+      profilePhoto,
       legalDocuments
     } = req.body;
 
@@ -608,6 +668,13 @@ async function updateMyProfile(req, res, next) {
       doctorProfile.availabilitySchedule = availabilitySchedule;
       if (availability === undefined) {
         doctorProfile.availability = scheduleToText(availabilitySchedule);
+      }
+    }
+
+    if (profilePhoto) {
+      const uploadedPhoto = await uploadProfilePhoto(profilePhoto);
+      if (uploadedPhoto) {
+        doctorProfile.profilePhoto = uploadedPhoto;
       }
     }
 
@@ -860,6 +927,7 @@ module.exports = {
   getMyPatientDetail,
   getMyPatientTrends,
   addPatientNote,
+  updatePatientRisk,
   getMyProfile,
   updateMyProfile,
   getMyPrescriptions,

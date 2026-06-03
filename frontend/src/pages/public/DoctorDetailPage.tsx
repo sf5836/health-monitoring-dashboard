@@ -7,6 +7,7 @@ import {
   type PublicDoctorReview
 } from '../../services/publicContentService';
 import { ROUTE_PATHS } from '../../routes/routePaths';
+import { subscribeProfilePhotoUpdates } from '../../services/profilePhotoEvents';
 
 function fallbackDoctor(id = 'doctor'): PublicDoctorDetail {
   return {
@@ -150,6 +151,17 @@ export default function DoctorDetailPage() {
     };
   }, [id]);
 
+  useEffect(() => {
+    return subscribeProfilePhotoUpdates((update) => {
+      if (update.role !== 'doctor') return;
+      setDoctor((previous) =>
+        previous.id === update.userId
+          ? { ...previous, profilePhotoUrl: update.profilePhotoUrl }
+          : previous
+      );
+    });
+  }, []);
+
   const sectionIds = {
     about: 'doctor-about',
     qualifications: 'doctor-qualifications',
@@ -238,7 +250,15 @@ export default function DoctorDetailPage() {
         <article className="hm-doctor-hero-card">
           <div className="hm-doctor-hero-top">
             <div className="hm-doctor-photo-col">
-              <div className="hm-doctor-photo" aria-hidden="true" />
+              <div
+                className={`hm-doctor-photo ${doctor.profilePhotoUrl ? 'has-photo' : ''}`}
+                aria-hidden="true"
+                style={
+                  doctor.profilePhotoUrl
+                    ? { backgroundImage: `url(${doctor.profilePhotoUrl})` }
+                    : undefined
+                }
+              />
               <span className="hm-verified-badge">Verified</span>
             </div>
 

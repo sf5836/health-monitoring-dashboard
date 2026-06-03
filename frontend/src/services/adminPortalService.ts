@@ -34,6 +34,9 @@ type BackendDoctorProfile = {
   reviewsCount?: number;
   bio?: string;
   availability?: string;
+  profilePhoto?: {
+    fileUrl?: string;
+  };
   availabilitySchedule?: Array<{
     day?: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
     startTime?: string;
@@ -144,6 +147,7 @@ export type AdminDoctor = {
   reviewsCount?: number;
   bio?: string;
   availability?: string;
+  profilePhotoUrl?: string;
   availabilitySchedule: Array<{
     day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
     startTime: string;
@@ -365,6 +369,7 @@ function mapDoctor(value: BackendDoctorProfile): AdminDoctor {
     reviewsCount: value.reviewsCount,
     bio: value.bio,
     availability: value.availability,
+    profilePhotoUrl: normalizeDocumentUrl(value.profilePhoto?.fileUrl),
     availabilitySchedule: (value.availabilitySchedule || []).map((slot) => ({
       day: (slot.day || 'monday') as AdminDoctor['availabilitySchedule'][number]['day'],
       startTime: slot.startTime || '09:00',

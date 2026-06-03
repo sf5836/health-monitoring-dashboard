@@ -59,6 +59,11 @@ const addPatientNoteSchema = z.object({
   note: z.string().min(3).max(1000)
 });
 
+const updatePatientRiskSchema = z.object({
+  level: z.enum(['normal', 'medium', 'high']),
+  note: z.string().max(200).optional()
+});
+
 const updateDoctorProfileSchema = z
   .object({
     fullName: z.string().min(2).optional(),
@@ -79,6 +84,21 @@ const updateDoctorProfileSchema = z
           endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/)
         })
       )
+      .optional(),
+    profilePhoto: z
+      .object({
+        fileName: z.string().min(3),
+        contentType: z
+          .string()
+          .refine(
+            (value) =>
+              ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(
+                String(value).toLowerCase()
+              ),
+            'Profile photo must be an image'
+          ),
+        dataBase64: z.string().min(16)
+      })
       .optional(),
     legalDocuments: z
       .array(
@@ -118,6 +138,7 @@ module.exports = {
   createDoctorBlogSchema,
   updateDoctorBlogSchema,
   addPatientNoteSchema,
+  updatePatientRiskSchema,
   updateDoctorProfileSchema,
   updateDoctorAppointmentSchema
 };

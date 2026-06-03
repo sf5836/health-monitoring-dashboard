@@ -221,6 +221,9 @@ export default function RegisterPage() {
 
         <section className="hm-register-right">
           <div className="hm-reg-surface">
+            <Link className="hm-reg-back-home" to={ROUTE_PATHS.public.home}>
+              {'<- Back to home'}
+            </Link>
             <h2>Create your account</h2>
             <p className="hm-reg-intro">
               Doctors register personal details first, then complete professional profile on the next page.
@@ -236,8 +239,7 @@ export default function RegisterPage() {
                   setSuccessMessage('');
                 }}
               >
-                <span className="hm-reg-role-copy">I am a Patient</span>
-                <span className="hm-reg-role-mini">Personal account</span>
+                Register as Patient
               </button>
               <button
                 type="button"
@@ -248,23 +250,27 @@ export default function RegisterPage() {
                   setSuccessMessage('');
                 }}
               >
-                <span className="hm-reg-role-copy">I am a Doctor</span>
-                <span className="hm-reg-role-mini">Professional onboarding next</span>
+                Register as Doctor
               </button>
             </div>
+
+            <p className="hm-reg-role-note">
+              {role === 'doctor' ? 'Doctor account registration' : 'Patient account registration'}
+            </p>
 
             {errorMessage ? <p className="hm-reg-alert hm-reg-alert-error">{errorMessage}</p> : null}
             {successMessage ? <p className="hm-reg-alert hm-reg-alert-success">{successMessage}</p> : null}
 
-            <form className="hm-reg-form" onSubmit={onSubmit}>
+            <form className="hm-reg-form" onSubmit={onSubmit} autoComplete="off">
               <div className="hm-reg-grid-2">
                 <label>
                   First Name
                   <input
                     type="text"
-                    placeholder="First name"
+                    placeholder="First Name"
                     value={firstName}
                     onChange={(event) => setFirstName(event.target.value)}
+                    autoComplete="off"
                     required
                   />
                 </label>
@@ -272,9 +278,10 @@ export default function RegisterPage() {
                   Last Name
                   <input
                     type="text"
-                    placeholder="Last name"
+                    placeholder="Last Name"
                     value={lastName}
                     onChange={(event) => setLastName(event.target.value)}
+                    autoComplete="off"
                     required
                   />
                 </label>
@@ -284,9 +291,10 @@ export default function RegisterPage() {
                 Email Address
                 <input
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder="Email Address"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="off"
                   required
                 />
                 <span className={`hm-reg-status ${emailStatus === 'Format looks good' ? 'ok' : 'warn'}`}>
@@ -298,9 +306,10 @@ export default function RegisterPage() {
                 Phone Number (Optional)
                 <input
                   type="tel"
-                  placeholder="03xx xxxxxxx"
+                  placeholder="Phone Number"
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
+                  autoComplete="off"
                 />
               </label>
 
@@ -308,9 +317,10 @@ export default function RegisterPage() {
                 Password
                 <input
                   type="password"
-                  placeholder="Create password"
+                  placeholder="Password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="new-password"
                   required
                 />
                 <div className="hm-reg-strength-wrap" aria-label="Password strength">
@@ -325,9 +335,10 @@ export default function RegisterPage() {
                 Confirm Password
                 <input
                   type="password"
-                  placeholder="Confirm password"
+                  placeholder="Confirm Password"
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
+                  autoComplete="new-password"
                   required
                 />
               </label>
@@ -350,35 +361,37 @@ export default function RegisterPage() {
 
       <style>{`
         .hm-register-page-wrap {
-          min-height: 100vh;
+          height: 100vh;
+          overflow: hidden;
           display: grid;
           place-items: center;
-          padding: clamp(0.8rem, 2.5vw, 1.6rem);
+          padding: clamp(0.4rem, 1.4vw, 0.9rem);
           background: radial-gradient(circle at 14% 20%, rgba(26, 158, 114, 0.09), transparent 42%),
-            linear-gradient(180deg, #f8faf9 0%, #f1f5f3 100%);
+            radial-gradient(circle at 88% 80%, rgba(13, 92, 69, 0.08), transparent 42%),
+            linear-gradient(180deg, #f7faf8 0%, #edf3f0 100%);
+          font-family: 'DM Sans', sans-serif;
         }
 
         .hm-register-page {
-          width: min(1180px, 100%);
-          min-height: min(860px, calc(100vh - 2rem));
+          width: min(1040px, 100%);
+          max-height: calc(100vh - 2rem);
           display: grid;
-          grid-template-columns: 46% 54%;
-          font-family: 'DM Sans', sans-serif;
+          grid-template-columns: 48% 52%;
           background: #ffffff;
           overflow: hidden;
           isolation: isolate;
-          border-radius: 18px;
+          border-radius: 20px;
           border: 1px solid #d9e3de;
-          box-shadow: 0 24px 50px rgba(15, 23, 42, 0.08);
+          box-shadow: 0 20px 48px rgba(15, 23, 42, 0.12);
         }
 
         .hm-register-left {
           background: #0d5c45;
           color: #ffffff;
-          padding: clamp(1.2rem, 2.4vw, 2rem);
+          padding: clamp(1rem, 2vw, 1.8rem);
           display: flex;
-          align-items: stretch;
-          justify-content: flex-start;
+          align-items: center;
+          justify-content: center;
           position: relative;
           overflow: hidden;
           opacity: 1;
@@ -393,24 +406,23 @@ export default function RegisterPage() {
         }
 
         .hm-register-left::before {
-          width: 380px;
-          height: 380px;
-          top: -150px;
-          right: -120px;
+          width: 410px;
+          height: 410px;
+          top: -165px;
+          right: -130px;
           background: radial-gradient(circle, rgba(45, 196, 141, 0.22) 0%, rgba(45, 196, 141, 0) 72%);
         }
 
         .hm-register-left::after {
-          width: 320px;
-          height: 320px;
-          left: -130px;
-          bottom: -110px;
+          width: 360px;
+          height: 360px;
+          left: -150px;
+          bottom: -130px;
           background: radial-gradient(circle, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 72%);
         }
 
         .hm-register-left-inner {
-          width: min(100%, 500px);
-          margin-block: auto;
+          width: min(100%, 470px);
           display: grid;
           gap: 0.85rem;
           position: relative;
@@ -456,8 +468,8 @@ export default function RegisterPage() {
         }
 
         .hm-register-logo-mark {
-          width: 1.5rem;
-          height: 1.5rem;
+          width: 1.6rem;
+          height: 1.6rem;
           border-radius: 999px;
           display: inline-grid;
           place-items: center;
@@ -470,17 +482,17 @@ export default function RegisterPage() {
         .hm-register-left h1 {
           margin: 0;
           font-family: 'Sora', sans-serif;
-          font-size: clamp(1.8rem, 2.8vw, 2.5rem);
-          line-height: 1.15;
+          font-size: clamp(1.8rem, 2.8vw, 2.4rem);
+          line-height: 1.07;
           max-width: 13ch;
         }
 
         .hm-register-subtitle {
           margin: 0;
           color: #d8f5e9;
-          line-height: 1.55;
+          line-height: 1.45;
           max-width: 38ch;
-          font-size: 0.98rem;
+          font-size: 0.95rem;
         }
 
         .hm-register-graphic {
@@ -488,9 +500,9 @@ export default function RegisterPage() {
           border-radius: 16px;
           border: 1px solid rgba(255, 255, 255, 0.28);
           background: linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(45, 196, 141, 0.2));
-          padding: 0.85rem;
+          padding: 0.8rem;
           display: grid;
-          gap: 0.7rem;
+          gap: 0.65rem;
           box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), 0 14px 30px rgba(0, 0, 0, 0.14);
           animation: hmFloat 5.6s ease-in-out infinite;
           overflow: hidden;
@@ -528,8 +540,8 @@ export default function RegisterPage() {
           border-radius: 12px;
           border: 1px solid rgba(255, 255, 255, 0.32);
           background: rgba(255, 255, 255, 0.1);
-          padding: 0.65rem;
-          min-height: 68px;
+          padding: 0.56rem;
+          min-height: 58px;
           overflow: hidden;
         }
 
@@ -595,7 +607,7 @@ export default function RegisterPage() {
           padding-left: 0;
           list-style: none;
           display: grid;
-          gap: 0.68rem;
+          gap: 0.52rem;
         }
 
         .hm-register-benefits li {
@@ -624,47 +636,64 @@ export default function RegisterPage() {
 
         .hm-register-right {
           background: #ffffff;
-          padding: clamp(1rem, 2.2vw, 1.8rem);
-          overflow-y: auto;
+          padding: clamp(0.6rem, 1.2vw, 1rem);
+          overflow: hidden;
           opacity: 1;
           display: grid;
-          align-items: center;
+          align-items: start;
         }
 
         .hm-reg-surface {
-          max-width: 640px;
+          max-width: 560px;
           margin-inline: auto;
+          margin-top: 0;
           background: #ffffff;
           border: 1px solid #e5e7eb;
           border-radius: 14px;
           box-shadow: 0 12px 26px rgba(13, 92, 69, 0.08);
-          padding: 0.9rem;
+          padding: 0.6rem;
+        }
+
+        .hm-reg-role-note {
+          margin: 0 0 0.45rem;
+          font-size: 0.75rem;
+          color: #4b5563;
+          font-weight: 600;
+        }
+
+        .hm-reg-back-home {
+          display: inline-block;
+          color: #4b5563;
+          font-size: 0.8rem;
+          text-decoration: none;
+          margin-bottom: 0.36rem;
+          font-weight: 600;
         }
 
         .hm-register-right h2 {
-          margin: 0.62rem 0 0.58rem;
+          margin: 0.32rem 0 0.48rem;
           font-family: 'Sora', sans-serif;
-          font-size: 1.58rem;
+          font-size: 1.42rem;
           color: #111827;
         }
 
         .hm-reg-intro {
-          margin: 0 0 0.72rem;
+          margin: 0 0 0.6rem;
           color: #4b5563;
-          font-size: 0.84rem;
+          font-size: 0.8rem;
           line-height: 1.45;
         }
 
         .hm-reg-role-row {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 0.6rem;
-          margin-bottom: 0.75rem;
+          gap: 0.42rem;
+          margin-bottom: 0.6rem;
         }
 
         .hm-reg-role {
-          min-height: 62px;
-          border-radius: 12px;
+          min-height: 46px;
+          border-radius: 10px;
           border: 1px solid #d1d5db;
           background: #ffffff;
           color: #374151;
@@ -673,9 +702,9 @@ export default function RegisterPage() {
           display: grid;
           align-content: center;
           justify-content: center;
-          gap: 0.18rem;
+          gap: 0.08rem;
           text-align: center;
-          padding: 0.5rem;
+          padding: 0.35rem 0.4rem;
         }
 
         .hm-reg-role.active {
@@ -685,21 +714,21 @@ export default function RegisterPage() {
         }
 
         .hm-reg-role-copy {
-          font-size: 0.92rem;
+          font-size: 0.8rem;
           line-height: 1.15;
         }
 
         .hm-reg-role-mini {
-          font-size: 0.73rem;
+          font-size: 0.64rem;
           font-weight: 600;
           opacity: 0.82;
         }
 
         .hm-reg-alert {
-          margin: 0 0 0.65rem;
-          border-radius: 10px;
-          padding: 0.56rem 0.72rem;
-          font-size: 0.82rem;
+          margin: 0.75rem 0;
+          border-radius: 12px;
+          padding: 0.62rem 0.78rem;
+          font-size: 0.84rem;
           font-weight: 600;
         }
 
@@ -717,27 +746,27 @@ export default function RegisterPage() {
 
         .hm-reg-form {
           display: grid;
-          gap: 0.56rem;
+          gap: 0.62rem;
           background: #ffffff;
         }
 
         .hm-reg-form label {
           display: grid;
-          gap: 0.22rem;
+          gap: 0.28rem;
           color: #111827;
           font-weight: 600;
-          font-size: 0.9rem;
+          font-size: 0.86rem;
         }
 
         .hm-reg-form input,
         .hm-reg-form textarea {
           width: 100%;
-          min-height: 38px;
+          min-height: 40px;
           border-radius: 10px;
           border: 1px solid #d1d5db;
           font-size: 0.9rem;
           font-family: 'DM Sans', sans-serif;
-          padding: 0.4rem 0.56rem;
+          padding: 0.42rem 0.62rem;
           color: #111827;
           background: #ffffff;
           transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -758,7 +787,7 @@ export default function RegisterPage() {
 
         .hm-reg-help,
         .hm-reg-status {
-          font-size: 0.74rem;
+          font-size: 0.78rem;
           color: #4b5563;
         }
 
@@ -771,10 +800,10 @@ export default function RegisterPage() {
         }
 
         .hm-reg-strength-wrap {
-          margin-top: 0.25rem;
+          margin-top: 0.2rem;
           border-radius: 999px;
           background: #e5e7eb;
-          height: 6px;
+          height: 5px;
           overflow: hidden;
         }
 
@@ -832,18 +861,20 @@ export default function RegisterPage() {
 
         .hm-reg-primary {
           width: 100%;
-          min-height: 40px;
+          min-height: 42px;
           border-radius: 10px;
           border: 0;
           color: #ffffff;
-          background: #0d5c45;
+          background: linear-gradient(135deg, #0d5c45 0%, #147657 100%);
           font-size: 0.9rem;
           font-weight: 800;
+          letter-spacing: 0.01em;
           cursor: pointer;
+          box-shadow: 0 11px 24px rgba(13, 92, 69, 0.23);
         }
 
         .hm-reg-primary:hover {
-          background: #0b4f3b;
+          background: linear-gradient(135deg, #0b4f3b 0%, #126349 100%);
         }
 
         .hm-reg-primary:disabled {
@@ -852,9 +883,10 @@ export default function RegisterPage() {
         }
 
         .hm-reg-login-link {
-          margin-top: 0.62rem;
+          margin: 0.2rem 0;
           color: #4b5563;
-          font-size: 0.85rem;
+          font-size: 0.84rem;
+          line-height: 1.4;
         }
 
         .hm-reg-login-link a {
@@ -902,9 +934,9 @@ export default function RegisterPage() {
           }
         }
 
-        @media (max-width: 1120px) {
+        @media (max-width: 1040px) {
           .hm-register-page-wrap {
-            padding: 0.7rem;
+            padding: 0.5rem;
           }
 
           .hm-register-page {
@@ -917,15 +949,15 @@ export default function RegisterPage() {
           }
 
           .hm-register-left {
-            padding: 1.15rem;
-          }
-
-          .hm-register-left-inner {
-            margin-block: 0;
+            padding: 1rem;
           }
 
           .hm-register-right {
-            padding: 0.85rem;
+            padding-top: 1rem;
+          }
+
+          .hm-reg-surface {
+            width: min(100%, 620px);
           }
         }
 
@@ -936,11 +968,19 @@ export default function RegisterPage() {
           }
 
           .hm-register-right h2 {
-            font-size: 1.35rem;
+            font-size: 1.52rem;
           }
 
-          .hm-register-subtitle {
-            font-size: 0.92rem;
+          .hm-register-graphic-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .hm-register-graphic-card-wide {
+            grid-column: auto;
+          }
+
+          .hm-reg-surface {
+            padding: 1.1rem 1rem;
           }
         }
       `}</style>

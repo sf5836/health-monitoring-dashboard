@@ -1,11 +1,29 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   getDoctorProfile,
   updateDoctorProfile,
   type DoctorProfile
 } from '../../services/doctorPortalService';
 
+type ProfilePhotoUpload = {
+  fileName: string;
+  contentType: string;
+  dataBase64: string;
+  previewUrl: string;
+};
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Unable to read file'));
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function DoctorProfilePage() {
+  const location = useLocation();
   const [profile, setProfile] = useState<DoctorProfile | null>(null);
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -15,6 +33,8 @@ export default function DoctorProfilePage() {
   const [fee, setFee] = useState('');
   const [bio, setBio] = useState('');
   const [availability, setAvailability] = useState('');
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState('');
+  const [profilePhotoUpload, setProfilePhotoUpload] = useState<ProfilePhotoUpload | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -39,6 +59,7 @@ export default function DoctorProfilePage() {
         setFee(data.fee !== undefined ? String(data.fee) : '');
         setBio(data.bio || '');
         setAvailability(data.availability || '');
+        setProfilePhotoUrl(data.profilePhotoUrl || '');
         setError('');
       } catch {
         if (cancelled) return;
@@ -57,6 +78,36 @@ export default function DoctorProfilePage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!location.hash) return;
+    const target = document.querySelector(location.hash);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [location.hash, loading]);
+
+  async function handleProfilePhotoChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const dataBase64 = await fileToBase64(file);
+      setProfilePhotoUpload({
+        fileName: file.name,
+        contentType: file.type || 'image/jpeg',
+        dataBase64,
+        previewUrl: dataBase64
+      });
+      setProfilePhotoUrl(dataBase64);
+      setSuccess('Profile photo ready to upload. Save to apply.');
+      setError('');
+    } catch {
+      setError('Unable to read the selected image.');
+    } finally {
+      event.target.value = '';
+    }
+  }
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -70,10 +121,19 @@ export default function DoctorProfilePage() {
         hospital: hospital.trim() || undefined,
         fee: fee ? Number(fee) : undefined,
         bio: bio.trim() || undefined,
-        availability: availability.trim() || undefined
+        availability: availability.trim() || undefined,
+        profilePhoto: profilePhotoUpload
+          ? {
+              fileName: profilePhotoUpload.fileName,
+              contentType: profilePhotoUpload.contentType,
+              dataBase64: profilePhotoUpload.dataBase64
+            }
+          : undefined
       });
 
       setProfile(next);
+      setProfilePhotoUrl(next.profilePhotoUrl || profilePhotoUpload?.previewUrl || profilePhotoUrl);
+      setProfilePhotoUpload(null);
       setSuccess('Profile updated successfully.');
       setError('');
     } catch {
@@ -102,6 +162,26 @@ export default function DoctorProfilePage() {
 
       <article className="doctor-card">
         <form className="doctor-form-grid" onSubmit={onSubmit}>
+          <div className="doctor-form-span-2 doctor-profile-photo-row" id="photo">
+            <label className="doctor-profile-photo is-editable" htmlFor="doctor-profile-photo">
+              {profilePhotoUrl ? (
+                <img src={profilePhotoUrl} alt="Doctor profile" />
+              ) : (
+                <span>{(fullName || 'DR').slice(0, 2).toUpperCase()}</span>
+              )}
+            </label>
+            <div className="doctor-profile-photo-actions">
+              <h3>Profile photo</h3>
+              <p>Click the photo to upload a professional headshot (PNG, JPG, WEBP).</p>
+              <input
+                id="doctor-profile-photo"
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/webp"
+                onChange={handleProfilePhotoChange}
+                hidden
+              />
+            </div>
+          </div>
           <label>
             Full Name
             <input type="text" value={fullName} onChange={(event) => setFullName(event.target.value)} />
@@ -131,7 +211,7 @@ export default function DoctorProfilePage() {
             Consultation Fee
             <input type="number" min="0" value={fee} onChange={(event) => setFee(event.target.value)} />
           </label>
-          <label className="doctor-form-span-2">
+          <label className="doctor-form-span-2" id="edit">
             Bio
             <textarea rows={4} value={bio} onChange={(event) => setBio(event.target.value)} />
           </label>

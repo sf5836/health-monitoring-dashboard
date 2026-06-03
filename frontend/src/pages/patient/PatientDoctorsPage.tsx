@@ -10,6 +10,7 @@ import {
   type ConnectedDoctor,
   type DoctorDirectoryResult
 } from '../../services/patientPortalService';
+import { subscribeProfilePhotoUpdates } from '../../services/profilePhotoEvents';
 
 const SPECIALIZATIONS = ['All', 'Cardiology', 'Neurology', 'Diabetes', 'Eye', 'General'];
 
@@ -61,6 +62,30 @@ export default function PatientDoctorsPage() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    return subscribeProfilePhotoUpdates((update) => {
+      if (update.role !== 'doctor') return;
+      setConnectedDoctors((previous) =>
+        previous.map((doctor) =>
+          doctor.doctorUserId === update.userId
+            ? { ...doctor, profilePhotoUrl: update.profilePhotoUrl }
+            : doctor
+        )
+      );
+      setDirectory((previous) => {
+        if (!previous) return previous;
+        return {
+          ...previous,
+          doctors: previous.doctors.map((doctor) =>
+            doctor.doctorUserId === update.userId
+              ? { ...doctor, profilePhotoUrl: update.profilePhotoUrl }
+              : doctor
+          )
+        };
+      });
+    });
   }, []);
 
   useEffect(() => {
@@ -170,8 +195,16 @@ export default function PatientDoctorsPage() {
             {connectedDoctors.map((doctor) => (
               <li key={doctor.doctorUserId} className="patient-list-item patient-doctor-row">
                 <div className="patient-doctor-profile">
-                  <div className="patient-doctor-avatar" aria-hidden="true">
-                    {initials(doctor.fullName)}
+                  <div
+                    className={`patient-doctor-avatar ${doctor.profilePhotoUrl ? 'has-photo' : ''}`}
+                    aria-hidden="true"
+                    style={
+                      doctor.profilePhotoUrl
+                        ? { backgroundImage: `url(${doctor.profilePhotoUrl})` }
+                        : undefined
+                    }
+                  >
+                    {doctor.profilePhotoUrl ? null : initials(doctor.fullName)}
                     <span className="patient-doctor-online-dot" />
                   </div>
 
@@ -262,8 +295,16 @@ export default function PatientDoctorsPage() {
                   const alreadyConnected = connectedIdSet.has(doctor.doctorUserId);
                   return (
                     <article key={doctor.doctorUserId} className="patient-card patient-directory-card">
-                      <div className="patient-doctor-avatar" aria-hidden="true">
-                        {initials(doctor.fullName)}
+                      <div
+                        className={`patient-doctor-avatar ${doctor.profilePhotoUrl ? 'has-photo' : ''}`}
+                        aria-hidden="true"
+                        style={
+                          doctor.profilePhotoUrl
+                            ? { backgroundImage: `url(${doctor.profilePhotoUrl})` }
+                            : undefined
+                        }
+                      >
+                        {doctor.profilePhotoUrl ? null : initials(doctor.fullName)}
                       </div>
                       <h4>{doctor.fullName}</h4>
                       <p>{doctor.specialization || 'Specialist'}</p>

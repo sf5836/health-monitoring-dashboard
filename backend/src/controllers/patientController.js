@@ -6,6 +6,7 @@ const User = require('../models/User');
 const VitalRecord = require('../models/VitalRecord');
 const Appointment = require('../models/Appointment');
 const Prescription = require('../models/Prescription');
+const { uploadBuffer } = require('../services/s3Service');
 
 function badRequest(message) {
   const error = new Error(message);
@@ -19,6 +20,73 @@ async function ensurePatientProfile(userId) {
     profile = await PatientProfile.create({ userId, connectedDoctorIds: [] });
   }
   return profile;
+}
+
+function badRequest(message) {
+  const error = new Error(message);
+  error.statusCode = 400;
+  return error;
+}
+
+async function uploadMedicalDocuments(medicalDocuments) {
+  if (!Array.isArray(medicalDocuments) || medicalDocuments.length === 0) {
+    return [];
+  }
+
+  const uploadedDocuments = [];
+
+  for (const document of medicalDocuments) {
+    const rawBase64 = String(document.dataBase64 || '').trim();
+    const normalizedBase64 = rawBase64.includes(',') ? rawBase64.split(',').pop() : rawBase64;
+    const buffer = Buffer.from(normalizedBase64 || '', 'base64');
+
+    if (!buffer.length) {
+      throw badRequest('Invalid medical document payload');
+    }
+
+    const upload = await uploadBuffer({
+      fileName: document.fileName,
+      _buffer: buffer,
+      contentType: document.contentType || 'application/pdf'
+    });
+
+    uploadedDocuments.push({
+      label: document.label ? String(document.label).trim() : undefined,
+      fileName: upload.fileName,
+      fileUrl: upload.url,
+      contentType: upload.contentType,
+      uploadedAt: new Date()
+    });
+  }
+
+  return uploadedDocuments;
+}
+
+async function uploadProfilePhoto(profilePhoto) {
+  if (!profilePhoto) {
+    return undefined;
+  }
+
+  const rawBase64 = String(profilePhoto.dataBase64 || '').trim();
+  const normalizedBase64 = rawBase64.includes(',') ? rawBase64.split(',').pop() : rawBase64;
+  const buffer = Buffer.from(normalizedBase64 || '', 'base64');
+
+  if (!buffer.length) {
+    throw badRequest('Invalid profile photo payload');
+  }
+
+  const upload = await uploadBuffer({
+    fileName: profilePhoto.fileName,
+    _buffer: buffer,
+    contentType: profilePhoto.contentType || 'image/jpeg'
+  });
+
+  return {
+    fileName: upload.fileName,
+    fileUrl: upload.url,
+    contentType: upload.contentType,
+    uploadedAt: new Date()
+  };
 }
 
 async function getMyDashboard(req, res, next) {
@@ -73,6 +141,7 @@ async function getMyProfile(req, res, next) {
 async function updateMyProfile(req, res, next) {
   try {
     const patientId = req.user.id;
+    const profile = await ensurePatientProfile(patientId);
     const allowedFields = [
       'dob',
       'gender',
@@ -92,7 +161,18 @@ async function updateMyProfile(req, res, next) {
       }
     }
 
-    const profile = await ensurePatientProfile(patientId);
+    if (Object.prototype.hasOwnProperty.call(req.body, 'medicalDocuments')) {
+      const uploadedMedicalDocuments = await uploadMedicalDocuments(req.body.medicalDocuments);
+      updatePayload.medicalDocuments = [
+        ...(Array.isArray(profile.medicalDocuments) ? profile.medicalDocuments : []),
+        ...uploadedMedicalDocuments
+      ];
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, 'profilePhoto')) {
+      updatePayload.profilePhoto = await uploadProfilePhoto(req.body.profilePhoto);
+    }
+
     Object.assign(profile, updatePayload);
     await profile.save();
 

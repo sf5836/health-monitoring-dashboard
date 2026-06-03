@@ -4,17 +4,24 @@ import {
   getConversationMessages,
   getCurrentUser,
   getMyConversations,
+  markConversationNotificationsRead,
   sendConversationMessage,
+  type ChatParticipant,
   type ChatConversation,
   type ChatMessage
 } from '../../services/patientPortalService';
 import { connectPatientRealtime } from '../../services/patientRealtime';
 import { sessionStore } from '../../services/sessionStore';
 import { formatDateTime } from '../patient/patientUi';
+import { subscribeProfilePhotoUpdates } from '../../services/profilePhotoEvents';
 
 function otherParticipantName(conversation: ChatConversation, myUserId: string): string {
   const participant = conversation.participants.find((item) => item.id !== myUserId);
   return participant?.fullName || 'Conversation';
+}
+
+function otherParticipant(conversation: ChatConversation, myUserId: string): ChatParticipant | undefined {
+  return conversation.participants.find((item) => item.id !== myUserId);
 }
 
 function mergeMessageList(previous: ChatMessage[], incoming: ChatMessage): ChatMessage[] {
@@ -219,7 +226,24 @@ export default function DoctorMessagesPage() {
     const socket = connectPatientRealtime(token);
     socket.emit('chat:joinConversation', { conversationId: selectedConversationId });
     socket.emit('chat:message:read', { conversationId: selectedConversationId });
+    markConversationNotificationsRead(selectedConversationId).catch(() => undefined);
   }, [selectedConversationId]);
+
+  useEffect(() => {
+    return subscribeProfilePhotoUpdates((update) => {
+      if (update.role !== 'patient') return;
+      setConversations((previous) =>
+        previous.map((conversation) => ({
+          ...conversation,
+          participants: conversation.participants.map((participant) =>
+            participant.id === update.userId
+              ? { ...participant, profilePhotoUrl: update.profilePhotoUrl }
+              : participant
+          )
+        }))
+      );
+    });
+  }, []);
 
   const selectedConversation = useMemo(
     () => conversations.find((item) => item.id === selectedConversationId) || null,
@@ -286,7 +310,8 @@ export default function DoctorMessagesPage() {
           ) : (
             <ul className="patient-chat-list">
               {filteredConversations.map((conversation) => {
-                const name = otherParticipantName(conversation, myUserId);
+                const participant = otherParticipant(conversation, myUserId);
+                const name = participant?.fullName || 'Conversation';
 
                 return (
                   <li key={conversation.id}>
@@ -295,8 +320,16 @@ export default function DoctorMessagesPage() {
                       className={`patient-chat-list-item ${conversation.id === selectedConversationId ? 'is-active' : ''}`}
                       onClick={() => setSelectedConversationId(conversation.id)}
                     >
-                      <div className="patient-chat-list-avatar" aria-hidden="true">
-                        {initials(name)}
+                      <div
+                        className={`patient-chat-list-avatar ${participant?.profilePhotoUrl ? 'has-photo' : ''}`}
+                        aria-hidden="true"
+                        style={
+                          participant?.profilePhotoUrl
+                            ? { backgroundImage: `url(${participant.profilePhotoUrl})` }
+                            : undefined
+                        }
+                      >
+                        {participant?.profilePhotoUrl ? null : initials(name)}
                         <span className="patient-doctor-online-dot" />
                       </div>
                       <div className="patient-chat-list-content">
@@ -317,8 +350,18 @@ export default function DoctorMessagesPage() {
             {selectedConversation ? (
               <>
                 <div className="patient-chat-thread-profile">
-                  <div className="patient-chat-list-avatar" aria-hidden="true">
-                    {initials(otherParticipantName(selectedConversation, myUserId))}
+                  <div
+                    className={`patient-chat-list-avatar ${otherParticipant(selectedConversation, myUserId)?.profilePhotoUrl ? 'has-photo' : ''}`}
+                    aria-hidden="true"
+                    style={
+                      otherParticipant(selectedConversation, myUserId)?.profilePhotoUrl
+                        ? { backgroundImage: `url(${otherParticipant(selectedConversation, myUserId)?.profilePhotoUrl})` }
+                        : undefined
+                    }
+                  >
+                    {otherParticipant(selectedConversation, myUserId)?.profilePhotoUrl
+                      ? null
+                      : initials(otherParticipantName(selectedConversation, myUserId))}
                     <span className="patient-doctor-online-dot" />
                   </div>
                   <div>

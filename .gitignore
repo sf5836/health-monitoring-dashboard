@@ -38,4 +38,5 @@ temp/
 # Optional local uploads/cache
 backend/uploads/
 backend/.cache/
+backend/.mongo-data/
 frontend/.cache/

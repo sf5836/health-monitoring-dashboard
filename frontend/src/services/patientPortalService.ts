@@ -1,4 +1,7 @@
 import { apiRequest } from './apiClient';
+import { APP_ENV } from '../config/env';
+import { sessionStore } from './sessionStore';
+import { emitProfilePhotoUpdate } from './profilePhotoEvents';
 
 export type RiskLevel = 'normal' | 'medium' | 'high';
 
@@ -7,6 +10,23 @@ type ApiEnvelope<T> = {
   message?: string;
   data: T;
 };
+
+function backendOrigin(): string {
+  try {
+    const resolved = new URL(APP_ENV.apiBaseUrl, window.location.origin);
+    return resolved.origin;
+  } catch {
+    return window.location.origin;
+  }
+}
+
+function normalizeDocumentUrl(fileUrl?: string): string {
+  const raw = String(fileUrl || '').trim();
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith('/')) return `${backendOrigin()}${raw}`;
+  return `${backendOrigin()}/${raw}`;
+}
 
 export type PortalUser = {
   id: string;
@@ -70,6 +90,15 @@ export type PatientProfile = {
   allergies: string[];
   medications: string[];
   medicalHistory?: string;
+  profilePhotoUrl?: string;
+  medicalDocuments: Array<{
+    id?: string;
+    label?: string;
+    fileName?: string;
+    fileUrl?: string;
+    contentType?: string;
+    uploadedAt?: string;
+  }>;
   emergencyContact?: {
     name?: string;
     relationship?: string;
@@ -87,6 +116,17 @@ export type PatientProfileUpdateInput = {
   allergies?: string[];
   medications?: string[];
   medicalHistory?: string;
+  profilePhoto?: {
+    fileName: string;
+    contentType: string;
+    dataBase64: string;
+  };
+  medicalDocuments?: Array<{
+    label?: string;
+    fileName: string;
+    contentType: string;
+    dataBase64: string;
+  }>;
   emergencyContact?: {
     name?: string;
     relationship?: string;
@@ -106,6 +146,7 @@ export type ConnectedDoctor = {
   fee?: number;
   rating?: number;
   availability?: string;
+  profilePhotoUrl?: string;
 };
 
 export type DoctorDirectoryResult = {
@@ -118,6 +159,7 @@ export type DoctorDirectoryResult = {
     fee?: number;
     rating?: number;
     reviewsCount?: number;
+    profilePhotoUrl?: string;
   }>;
   pagination: {
     page: number;
@@ -178,6 +220,7 @@ export type ChatParticipant = {
   fullName: string;
   email?: string;
   role?: 'patient' | 'doctor' | 'admin';
+  profilePhotoUrl?: string;
 };
 
 export type ChatConversation = {
@@ -228,6 +271,19 @@ type BackendDoctorProfile = {
   fee?: number;
   rating?: number;
   availability?: string;
+  profilePhoto?: {
+    fileUrl?: string;
+  };
+};
+
+type BackendMedicalDocument = {
+  id?: string;
+  _id?: string;
+  label?: string;
+  fileName?: string;
+  fileUrl?: string;
+  contentType?: string;
+  uploadedAt?: string;
 };
 
 type BackendVitalRecord = {
@@ -278,9 +334,24 @@ type BackendPrescription = {
 
 type BackendConversation = {
   _id: string;
-  participantIds: Array<BackendUser | string>;
+  participantIds: Array<
+    (BackendUser & {
+      profilePhoto?: {
+        fileUrl?: string;
+      };
+    }) |
+      string
+  >;
   lastMessageAt?: string;
   updatedAt?: string;
+};
+
+type BackendPatientProfile = Omit<PatientProfile, 'medicalDocuments' | 'profilePhotoUrl'> & {
+  _id?: string;
+  profilePhoto?: {
+    fileUrl?: string;
+  };
+  medicalDocuments?: BackendMedicalDocument[];
 };
 
 type BackendMessage = {
@@ -365,7 +436,8 @@ function mapConversation(conversation: BackendConversation): ChatConversation {
         id: participant.id || participant._id || '',
         fullName: participant.fullName || 'User',
         email: participant.email,
-        role: participant.role
+        role: participant.role,
+        profilePhotoUrl: normalizeDocumentUrl(participant.profilePhoto?.fileUrl)
       };
     }),
     lastMessageAt: conversation.lastMessageAt,
@@ -421,7 +493,7 @@ export async function getPatientDashboard(): Promise<PortalDashboard> {
 }
 
 export async function getPatientProfile(): Promise<PatientProfile> {
-  const response = await apiRequest<ApiEnvelope<{ profile: PatientProfile & { _id?: string } }>>(
+  const response = await apiRequest<ApiEnvelope<{ profile: BackendPatientProfile }>>(
     '/patients/me/profile'
   );
   const profile = response.data.profile;
@@ -436,13 +508,22 @@ export async function getPatientProfile(): Promise<PatientProfile> {
     allergies: profile.allergies || [],
     medications: profile.medications || [],
     medicalHistory: profile.medicalHistory,
+    profilePhotoUrl: normalizeDocumentUrl(profile.profilePhoto?.fileUrl),
+    medicalDocuments: (profile.medicalDocuments || []).map((document) => ({
+      id: document.id || document._id,
+      label: document.label,
+      fileName: document.fileName,
+      fileUrl: normalizeDocumentUrl(document.fileUrl),
+      contentType: document.contentType,
+      uploadedAt: document.uploadedAt
+    })),
     emergencyContact: profile.emergencyContact,
     connectedDoctorIds: profile.connectedDoctorIds || []
   };
 }
 
 export async function updatePatientProfile(payload: PatientProfileUpdateInput): Promise<PatientProfile> {
-  const response = await apiRequest<ApiEnvelope<{ profile: PatientProfile & { _id?: string } }>>(
+  const response = await apiRequest<ApiEnvelope<{ profile: BackendPatientProfile }>>(
     '/patients/me/profile',
     {
       method: 'PATCH',
@@ -452,7 +533,7 @@ export async function updatePatientProfile(payload: PatientProfileUpdateInput): 
 
   const profile = response.data.profile;
 
-  return {
+  const mappedProfile = {
     id: profile.id || profile._id || '',
     dob: profile.dob,
     gender: profile.gender,
@@ -462,9 +543,29 @@ export async function updatePatientProfile(payload: PatientProfileUpdateInput): 
     allergies: profile.allergies || [],
     medications: profile.medications || [],
     medicalHistory: profile.medicalHistory,
+    profilePhotoUrl: normalizeDocumentUrl(profile.profilePhoto?.fileUrl),
+    medicalDocuments: (profile.medicalDocuments || []).map((document) => ({
+      id: document.id || document._id,
+      label: document.label,
+      fileName: document.fileName,
+      fileUrl: normalizeDocumentUrl(document.fileUrl),
+      contentType: document.contentType,
+      uploadedAt: document.uploadedAt
+    })),
     emergencyContact: profile.emergencyContact,
     connectedDoctorIds: profile.connectedDoctorIds || []
   };
+
+  const currentUserId = sessionStore.getUserId() || '';
+  if (currentUserId) {
+    emitProfilePhotoUpdate({
+      role: 'patient',
+      userId: currentUserId,
+      profilePhotoUrl: mappedProfile.profilePhotoUrl || ''
+    });
+  }
+
+  return mappedProfile;
 }
 
 export async function getPatientVitals(limit = 80): Promise<PortalVitalRecord[]> {
@@ -528,7 +629,8 @@ export async function getConnectedDoctors(): Promise<ConnectedDoctor[]> {
     hospital: doctor.hospital,
     fee: doctor.fee,
     rating: doctor.rating,
-    availability: doctor.availability
+    availability: doctor.availability,
+    profilePhotoUrl: normalizeDocumentUrl(doctor.profilePhoto?.fileUrl)
   }));
 }
 
@@ -575,6 +677,9 @@ export async function getDoctorDirectory(params: {
         fee?: number;
         rating?: number;
         reviewsCount?: number;
+        profilePhoto?: {
+          fileUrl?: string;
+        };
       }>;
       pagination: {
         page: number;
@@ -593,7 +698,8 @@ export async function getDoctorDirectory(params: {
       hospital: doctor.hospital,
       fee: doctor.fee,
       rating: doctor.rating,
-      reviewsCount: doctor.reviewsCount
+      reviewsCount: doctor.reviewsCount,
+      profilePhotoUrl: normalizeDocumentUrl(doctor.profilePhoto?.fileUrl)
     })),
     pagination: {
       page: response.data.pagination?.page || 1,
@@ -757,4 +863,14 @@ export async function markAllNotificationsRead(): Promise<void> {
   await apiRequest<ApiEnvelope<Record<string, never>>>('/notifications/me/read-all', {
     method: 'PATCH'
   });
+}
+
+export async function markConversationNotificationsRead(conversationId: string): Promise<void> {
+  if (!conversationId) return;
+  await apiRequest<ApiEnvelope<Record<string, never>>>(
+    `/notifications/me/conversations/${conversationId}/read`,
+    {
+      method: 'PATCH'
+    }
+  );
 }

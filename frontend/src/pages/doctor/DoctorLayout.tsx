@@ -39,6 +39,7 @@ export default function DoctorLayout() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [messageCount, setMessageCount] = useState(0);
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -118,16 +119,25 @@ export default function DoctorLayout() {
     const onReadSingle = (payload: { notificationId?: string }) => {
       if (!payload.notificationId) return;
 
-      setNotifications((previous) =>
-        previous.map((item) =>
-          item.id === payload.notificationId
-            ? {
-                ...item,
-                isRead: true
-              }
-            : item
-        )
-      );
+      setNotifications((previous) => {
+        let shouldDecrement = false;
+        const next = previous.map((item) => {
+          if (item.id !== payload.notificationId) return item;
+          if (!item.isRead && item.type === 'chat') {
+            shouldDecrement = true;
+          }
+          return {
+            ...item,
+            isRead: true
+          };
+        });
+
+        if (shouldDecrement) {
+          setMessageCount((current) => Math.max(current - 1, 0));
+        }
+
+        return next;
+      });
     };
 
     const onReadAll = () => {
@@ -195,6 +205,9 @@ export default function DoctorLayout() {
     const match = NAV_ITEMS.find((item) => location.pathname.startsWith(item.path));
     return match?.label || 'Dashboard';
   }, [location.pathname]);
+
+  const notificationButtonLabel = isNotificationPanelOpen ? 'Close notifications' : 'Open notifications';
+  const profileButtonLabel = isProfileMenuOpen ? 'Close profile menu' : 'Open profile menu';
 
   async function onMarkNotificationRead(notificationId: string) {
     try {
@@ -307,52 +320,109 @@ export default function DoctorLayout() {
             >
               {isMobileSidebarOpen ? 'Close Menu' : 'Menu'}
             </button>
-            <button
-              type="button"
-              className="doctor-notification-button"
-              onClick={() => setIsNotificationPanelOpen((previous) => !previous)}
-            >
-              Notifications
-              {unreadCount > 0 ? <span className="doctor-badge">{unreadCount}</span> : null}
-            </button>
+            <div className="doctor-notification-wrap">
+              <button
+                type="button"
+                className="doctor-notification-button"
+                aria-label={notificationButtonLabel}
+                aria-expanded={isNotificationPanelOpen}
+                aria-controls="doctor-notification-dropdown"
+                onClick={() => {
+                  setIsNotificationPanelOpen((previous) => !previous);
+                  setIsProfileMenuOpen(false);
+                }}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" className="doctor-notification-icon">
+                  <path
+                    d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm8-6.5c-1.1-1.1-2-2.1-2-5V9a6 6 0 1 0-12 0v1.5c0 2.9-.9 3.9-2 5-.4.4-.5 1-.2 1.5.2.5.7.8 1.3.8h15.8c.6 0 1.1-.3 1.3-.8.3-.5.2-1.1-.2-1.5Z"
+                    fill="currentColor"
+                  />
+                </svg>
+                {unreadCount > 0 ? <span className="doctor-badge">{unreadCount}</span> : null}
+              </button>
+
+              {isNotificationPanelOpen ? (
+                <section className="doctor-notification-panel" id="doctor-notification-dropdown">
+                  <div className="doctor-notification-head">
+                    <h2>Notifications</h2>
+                    <button type="button" onClick={onMarkAllNotificationsRead}>
+                      Mark all read
+                    </button>
+                  </div>
+                  <ul className="doctor-notification-list">
+                    {notifications.length === 0 ? (
+                      <li className="doctor-notification-item">
+                        <p>No notifications yet.</p>
+                      </li>
+                    ) : (
+                      notifications.map((item) => (
+                        <li key={item.id} className={`doctor-notification-item ${item.isRead ? '' : 'is-unread'}`}>
+                          <div>
+                            <h3>{item.title}</h3>
+                            {item.body ? <p>{item.body}</p> : null}
+                          </div>
+                          {!item.isRead ? (
+                            <button
+                              type="button"
+                              className="doctor-link-button"
+                              onClick={() => onMarkNotificationRead(item.id)}
+                            >
+                              Mark read
+                            </button>
+                          ) : null}
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                </section>
+              ) : null}
+            </div>
+
+            <div className="doctor-profile-menu-wrap">
+              <button
+                type="button"
+                className="doctor-profile-menu-button"
+                aria-label={profileButtonLabel}
+                aria-expanded={isProfileMenuOpen}
+                aria-controls="doctor-profile-dropdown"
+                onClick={() => {
+                  setIsProfileMenuOpen((previous) => !previous);
+                  setIsNotificationPanelOpen(false);
+                }}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" className="doctor-profile-icon">
+                  <path
+                    d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </button>
+
+              {isProfileMenuOpen ? (
+                <div className="doctor-profile-menu" id="doctor-profile-dropdown">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      navigate(`${ROUTE_PATHS.doctor.profile}#photo`);
+                    }}
+                  >
+                    Edit photo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      navigate(`${ROUTE_PATHS.doctor.profile}#edit`);
+                    }}
+                  >
+                    Update profile
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
         </header>
-
-        {isNotificationPanelOpen ? (
-          <section className="doctor-notification-panel">
-            <div className="doctor-notification-head">
-              <h2>Notifications</h2>
-              <button type="button" onClick={onMarkAllNotificationsRead}>
-                Mark all read
-              </button>
-            </div>
-            <ul className="doctor-notification-list">
-              {notifications.length === 0 ? (
-                <li className="doctor-notification-item">
-                  <p>No notifications yet.</p>
-                </li>
-              ) : (
-                notifications.map((item) => (
-                  <li key={item.id} className={`doctor-notification-item ${item.isRead ? '' : 'is-unread'}`}>
-                    <div>
-                      <h3>{item.title}</h3>
-                      {item.body ? <p>{item.body}</p> : null}
-                    </div>
-                    {!item.isRead ? (
-                      <button
-                        type="button"
-                        className="doctor-link-button"
-                        onClick={() => onMarkNotificationRead(item.id)}
-                      >
-                        Mark read
-                      </button>
-                    ) : null}
-                  </li>
-                ))
-              )}
-            </ul>
-          </section>
-        ) : null}
 
         <main className="doctor-content">
           <Outlet />

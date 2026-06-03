@@ -9,6 +9,7 @@ import {
   type AdminDoctor
 } from '../../services/adminPortalService';
 import { formatDate, formatRelativeTime, initials, statusClass } from './adminUi';
+import { subscribeProfilePhotoUpdates } from '../../services/profilePhotoEvents';
 
 type DoctorTab = 'pending' | 'all' | 'suspended';
 
@@ -91,6 +92,24 @@ export default function AdminDoctorsPage() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    return subscribeProfilePhotoUpdates((update) => {
+      if (update.role !== 'doctor') return;
+      setDoctors((previous) =>
+        previous.map((doctor) =>
+          doctor.userId === update.userId
+            ? { ...doctor, profilePhotoUrl: update.profilePhotoUrl }
+            : doctor
+        )
+      );
+      setSelectedDoctor((previous) =>
+        previous && previous.userId === update.userId
+          ? { ...previous, profilePhotoUrl: update.profilePhotoUrl }
+          : previous
+      );
+    });
   }, []);
 
   const pendingDoctors = useMemo(
@@ -317,7 +336,11 @@ export default function AdminDoctorsPage() {
               pendingDoctors.map((doctor) => (
                 <article key={doctor.id} className="admin-pending-doctor-card">
                   <div className="admin-avatar large" aria-hidden="true">
-                    {initials(doctor.fullName)}
+                    {doctor.profilePhotoUrl ? (
+                      <img src={doctor.profilePhotoUrl} alt="" />
+                    ) : (
+                      initials(doctor.fullName)
+                    )}
                   </div>
 
                   <div>
@@ -426,7 +449,13 @@ export default function AdminDoctorsPage() {
                         />
                       </td>
                       <td>
-                        <div className="admin-avatar">{initials(doctor.fullName)}</div>
+                        <div className="admin-avatar" aria-hidden="true">
+                          {doctor.profilePhotoUrl ? (
+                            <img src={doctor.profilePhotoUrl} alt="" />
+                          ) : (
+                            initials(doctor.fullName)
+                          )}
+                        </div>
                       </td>
                       <td>
                         <p className="admin-table-name">{doctor.fullName}</p>
@@ -498,7 +527,13 @@ export default function AdminDoctorsPage() {
             <div className="admin-review-grid">
               <section className="admin-card no-shadow">
                 <div className="admin-inline-actions">
-                  <div className="admin-avatar large">{initials(selectedDoctor.fullName)}</div>
+                  <div className="admin-avatar large" aria-hidden="true">
+                    {selectedDoctor.profilePhotoUrl ? (
+                      <img src={selectedDoctor.profilePhotoUrl} alt="" />
+                    ) : (
+                      initials(selectedDoctor.fullName)
+                    )}
+                  </div>
                   <div>
                     <p className="admin-card-name">{selectedDoctor.fullName}</p>
                     <p>{selectedDoctor.specialization || 'Specialist'}</p>

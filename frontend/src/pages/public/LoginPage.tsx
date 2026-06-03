@@ -221,16 +221,16 @@ export default function LoginPage() {
                 {error ? <p className="hm-login-alert hm-login-alert-error">{error}</p> : null}
                 {message ? <p className="hm-login-alert hm-login-alert-success">{message}</p> : null}
 
-                <form className="hm-login-form" onSubmit={onLoginSubmit}>
+                <form className="hm-login-form" onSubmit={onLoginSubmit} autoComplete="off">
                   <label>
                     Email Address
                     <div className="hm-login-input-wrap">
-                      <span aria-hidden="true">mail</span>
                       <input
                         type="email"
-                        placeholder="you@example.com"
+                        placeholder="Email Address"
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
+                        autoComplete="off"
                         required
                       />
                     </div>
@@ -239,12 +239,12 @@ export default function LoginPage() {
                   <label>
                     Password
                     <div className="hm-login-input-wrap">
-                      <span aria-hidden="true">key</span>
                       <input
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="Enter your password"
+                        placeholder="Password"
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
+                        autoComplete="current-password"
                         required
                       />
                       <button
@@ -279,14 +279,15 @@ export default function LoginPage() {
                 {message ? <p className="hm-login-alert hm-login-alert-success">{message}</p> : null}
 
                 {forgotStep === 'email' ? (
-                  <form className="hm-login-form" onSubmit={onSendOtp}>
+                  <form className="hm-login-form" onSubmit={onSendOtp} autoComplete="off">
                     <label>
                       Email Address
                       <input
                         type="email"
-                        placeholder="you@example.com"
+                        placeholder="Email Address"
                         value={forgotEmail}
                         onChange={(event) => setForgotEmail(event.target.value)}
+                        autoComplete="off"
                         required
                       />
                     </label>
@@ -319,14 +320,15 @@ export default function LoginPage() {
                 ) : null}
 
                 {forgotStep === 'reset' ? (
-                  <form className="hm-login-form" onSubmit={onResetPassword}>
+                  <form className="hm-login-form" onSubmit={onResetPassword} autoComplete="off">
                     <label>
                       New Password
                       <input
                         type={showNewPassword ? 'text' : 'password'}
-                        placeholder="New password"
+                        placeholder="New Password"
                         value={newPassword}
                         onChange={(event) => setNewPassword(event.target.value)}
+                        autoComplete="new-password"
                         required
                       />
                     </label>
@@ -334,9 +336,10 @@ export default function LoginPage() {
                       Confirm Password
                       <input
                         type={showNewPassword ? 'text' : 'password'}
-                        placeholder="Confirm new password"
+                        placeholder="Confirm Password"
                         value={confirmNewPassword}
                         onChange={(event) => setConfirmNewPassword(event.target.value)}
+                        autoComplete="new-password"
                         required
                       />
                     </label>
@@ -364,10 +367,11 @@ export default function LoginPage() {
 
       <style>{`
         .hm-login-page-wrap {
-          min-height: 100vh;
+          height: 100vh;
+          overflow: hidden;
           display: grid;
           place-items: center;
-          padding: clamp(0.9rem, 2.6vw, 1.8rem);
+          padding: clamp(0.4rem, 1.4vw, 0.9rem);
           background: radial-gradient(circle at 14% 15%, rgba(26, 158, 114, 0.14), transparent 40%),
             radial-gradient(circle at 88% 80%, rgba(13, 92, 69, 0.08), transparent 42%),
             linear-gradient(180deg, #f7faf8 0%, #edf3f0 100%);
@@ -375,14 +379,14 @@ export default function LoginPage() {
         }
 
         .hm-login-page {
-          width: min(1180px, 100%);
-          min-height: min(820px, calc(100vh - 1.8rem));
+          width: min(1040px, 100%);
+          max-height: calc(100vh - 2rem);
           display: grid;
           grid-template-columns: 48% 52%;
           background: #ffffff;
-          border-radius: 24px;
+          border-radius: 20px;
           border: 1px solid #d9e3de;
-          box-shadow: 0 34px 70px rgba(15, 23, 42, 0.14);
+          box-shadow: 0 20px 48px rgba(15, 23, 42, 0.12);
           overflow: hidden;
           animation: hmLoginEnter 420ms ease;
         }
@@ -390,7 +394,7 @@ export default function LoginPage() {
         .hm-login-left {
           background: #0d5c45;
           color: #ffffff;
-          padding: clamp(1.4rem, 2.8vw, 2.4rem);
+          padding: clamp(1rem, 2vw, 1.8rem);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -423,9 +427,9 @@ export default function LoginPage() {
         }
 
         .hm-login-left-inner {
-          width: min(100%, 530px);
+          width: min(100%, 470px);
           display: grid;
-          gap: 1rem;
+          gap: 0.85rem;
           position: relative;
           z-index: 1;
         }
@@ -457,7 +461,7 @@ export default function LoginPage() {
         .hm-login-left h1 {
           margin: 0;
           font-family: 'Sora', sans-serif;
-          font-size: clamp(2.2rem, 3.5vw, 3rem);
+          font-size: clamp(1.8rem, 2.8vw, 2.4rem);
           line-height: 1.07;
         }
 
@@ -465,30 +469,30 @@ export default function LoginPage() {
           margin: 0;
           color: #d8f5e9;
           line-height: 1.45;
-          font-size: 1.02rem;
+          font-size: 0.95rem;
         }
 
         .hm-login-trust {
           margin: -0.15rem 0 0;
           color: rgba(233, 251, 243, 0.88);
-          font-size: 0.84rem;
+          font-size: 0.8rem;
           letter-spacing: 0.01em;
         }
 
         .hm-login-graphic {
           margin-top: 0.5rem;
-          border-radius: 20px;
+          border-radius: 16px;
           border: 1px solid rgba(255, 255, 255, 0.28);
           background: linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(45, 196, 141, 0.2));
-          padding: 1rem;
+          padding: 0.8rem;
           display: grid;
-          gap: 0.85rem;
+          gap: 0.65rem;
           box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), 0 14px 30px rgba(0, 0, 0, 0.14);
           animation: hmLoginFloat 5.8s ease-in-out infinite;
         }
 
         .hm-login-ecg {
-          height: 52px;
+          height: 44px;
           border-radius: 999px;
           background: repeating-linear-gradient(
               90deg,
@@ -512,7 +516,7 @@ export default function LoginPage() {
           border: 1px solid rgba(255, 255, 255, 0.32);
           border-radius: 13px;
           background: rgba(255, 255, 255, 0.1);
-          padding: 0.56rem;
+          padding: 0.45rem;
           display: grid;
           gap: 0.24rem;
           animation: hmLoginPulse 2.3s ease-in-out infinite;
@@ -538,19 +542,20 @@ export default function LoginPage() {
 
         .hm-login-right {
           background: linear-gradient(180deg, #ffffff 0%, #f9fcfb 100%);
-          padding: clamp(1.1rem, 2.3vw, 1.8rem);
+          padding: clamp(0.85rem, 1.9vw, 1.4rem);
           display: grid;
           align-items: center;
         }
 
         .hm-login-surface {
-          width: min(100%, 620px);
+          width: min(100%, 560px);
           margin-inline: auto;
+          margin-top: 0;
           background: linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
           border: 1px solid #e5e7eb;
-          border-radius: 18px;
+          border-radius: 14px;
           box-shadow: 0 18px 36px rgba(13, 92, 69, 0.11);
-          padding: 1.45rem 1.55rem;
+          padding: 0.9rem 0.9rem;
         }
 
         .hm-login-back-home {
@@ -574,7 +579,7 @@ export default function LoginPage() {
         .hm-login-surface h2 {
           margin: 0.28rem 0 0;
           font-family: 'Sora', sans-serif;
-          font-size: clamp(1.8rem, 2.3vw, 2rem);
+          font-size: clamp(1.45rem, 2vw, 1.75rem);
           color: #111827;
           line-height: 1.15;
         }
@@ -607,27 +612,27 @@ export default function LoginPage() {
         }
 
         .hm-login-form {
-          margin-top: 0.9rem;
+          margin-top: 0.7rem;
           display: grid;
-          gap: 0.78rem;
+          gap: 0.62rem;
         }
 
         .hm-login-form label {
           display: grid;
-          gap: 0.35rem;
+          gap: 0.28rem;
           color: #111827;
           font-weight: 600;
-          font-size: 0.92rem;
+          font-size: 0.86rem;
         }
 
         .hm-login-form input {
           width: 100%;
-          min-height: 46px;
-          border-radius: 12px;
+          min-height: 40px;
+          border-radius: 10px;
           border: 1px solid #d1d5db;
-          font-size: 0.94rem;
+          font-size: 0.9rem;
           font-family: 'DM Sans', sans-serif;
-          padding: 0.54rem 0.72rem;
+          padding: 0.42rem 0.62rem;
           color: #111827;
           background: #ffffff;
           transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -641,10 +646,10 @@ export default function LoginPage() {
 
         .hm-login-input-wrap {
           display: grid;
-          grid-template-columns: auto 1fr auto;
+          grid-template-columns: 1fr auto;
           align-items: center;
           border: 1px solid #d1d5db;
-          border-radius: 12px;
+          border-radius: 10px;
           background: #ffffff;
         }
 
@@ -653,20 +658,11 @@ export default function LoginPage() {
           box-shadow: 0 0 0 3px rgba(26, 158, 114, 0.2);
         }
 
-        .hm-login-input-wrap span {
-          color: #6b7280;
-          font-size: 0.7rem;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-          padding-left: 0.72rem;
-          font-weight: 700;
-        }
-
         .hm-login-input-wrap input {
           border: 0;
           box-shadow: none;
-          min-height: 44px;
-          padding-left: 0.54rem;
+          min-height: 40px;
+          padding-left: 0.62rem;
         }
 
         .hm-login-input-wrap input:focus {
@@ -707,12 +703,12 @@ export default function LoginPage() {
 
         .hm-login-submit {
           width: 100%;
-          min-height: 48px;
-          border-radius: 12px;
+          min-height: 42px;
+          border-radius: 10px;
           border: 0;
           color: #ffffff;
           background: linear-gradient(135deg, #0d5c45 0%, #147657 100%);
-          font-size: 0.96rem;
+          font-size: 0.9rem;
           font-weight: 800;
           letter-spacing: 0.01em;
           cursor: pointer;
@@ -779,7 +775,7 @@ export default function LoginPage() {
           text-align: center;
           font-weight: 800;
           font-size: 1.03rem;
-          min-height: 50px;
+          min-height: 44px;
         }
 
         @keyframes hmLoginEnter {
@@ -833,7 +829,7 @@ export default function LoginPage() {
           }
 
           .hm-login-surface {
-            width: min(100%, 700px);
+            width: min(100%, 620px);
           }
         }
 

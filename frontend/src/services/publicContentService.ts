@@ -1,4 +1,5 @@
 import { apiRequest } from './apiClient';
+import { APP_ENV } from '../config/env';
 
 export type PublicDoctorCard = {
   id: string;
@@ -12,6 +13,7 @@ export type PublicDoctorCard = {
   reviewsCount: number;
   hospital: string;
   availability: string;
+  profilePhotoUrl?: string;
 };
 
 export type PublicDoctorListingQuery = {
@@ -58,6 +60,7 @@ export type PublicBlogCard = {
   author: string;
   date: string;
   excerpt: string;
+  coverImageUrl?: string;
 };
 
 export type PublicTestimonialCard = {
@@ -82,6 +85,9 @@ type ApiDoctor = {
   availability?: string;
   bio?: string;
   qualifications?: string[];
+  profilePhoto?: {
+    fileUrl?: string;
+  };
 };
 
 type ApiBlog = {
@@ -94,6 +100,7 @@ type ApiBlog = {
   publishedAt?: string;
   excerpt?: string;
   content?: string;
+  coverImageUrl?: string;
 };
 
 type DoctorListResponse = {
@@ -155,6 +162,23 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   year: 'numeric'
 });
 
+function backendOrigin(): string {
+  try {
+    const resolved = new URL(APP_ENV.apiBaseUrl, window.location.origin);
+    return resolved.origin;
+  } catch {
+    return window.location.origin;
+  }
+}
+
+function normalizeAssetUrl(fileUrl?: string): string {
+  const raw = String(fileUrl || '').trim();
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith('/')) return `${backendOrigin()}${raw}`;
+  return `${backendOrigin()}/${raw}`;
+}
+
 function mapDoctor(item: ApiDoctor): PublicDoctorCard {
   const feeValue = item.fee ?? 0;
   const experienceYears = item.experienceYears ?? 0;
@@ -171,7 +195,8 @@ function mapDoctor(item: ApiDoctor): PublicDoctorCard {
     rating: item.rating ?? 5,
     reviewsCount: item.reviewsCount ?? 0,
     hospital: item.hospital || 'HealthMonitor Pro Partner Hospital',
-    availability: item.availability || 'Mon-Fri'
+    availability: item.availability || 'Mon-Fri',
+    profilePhotoUrl: normalizeAssetUrl(item.profilePhoto?.fileUrl)
   };
 }
 
@@ -200,7 +225,8 @@ function mapBlog(item: ApiBlog): PublicBlogCard {
     title: item.title || 'Untitled article',
     author: item.authorId?.fullName || 'HealthMonitor Pro Team',
     date,
-    excerpt: item.excerpt || item.content?.slice(0, 120) || 'Read more from HealthMonitor Pro experts.'
+    excerpt: item.excerpt || item.content?.slice(0, 120) || 'Read more from HealthMonitor Pro experts.',
+    coverImageUrl: normalizeAssetUrl(item.coverImageUrl)
   };
 }
 
