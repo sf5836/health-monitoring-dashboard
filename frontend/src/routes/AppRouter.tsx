@@ -32,6 +32,7 @@ import PatientProfilePage from '../pages/patient/PatientProfilePage';
 import PatientTrendsPage from '../pages/patient/PatientTrendsPage';
 import PatientVitalsPage from '../pages/patient/PatientVitalsPage';
 import BlogsPage from '../pages/public/BlogsPage';
+import BlogDetailPage from '../pages/public/BlogDetailPage';
 import DoctorDetailPage from '../pages/public/DoctorDetailPage';
 import DoctorsPage from '../pages/public/DoctorsPage';
 import HomePage from '../pages/public/HomePage';
@@ -92,6 +93,7 @@ export function AppRouter() {
       <Route path={ROUTE_PATHS.public.doctors} element={<DoctorsPage />} />
       <Route path={ROUTE_PATHS.public.doctorDetail} element={<DoctorDetailPage />} />
       <Route path={ROUTE_PATHS.public.blogs} element={<BlogsPage />} />
+      <Route path={ROUTE_PATHS.public.blogDetail} element={<BlogDetailPage />} />
       <Route
         path={ROUTE_PATHS.auth.login}
         element={

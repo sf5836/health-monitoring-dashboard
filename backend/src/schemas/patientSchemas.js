@@ -59,7 +59,13 @@ const updatePatientProfileSchema = z
     message: 'At least one field is required'
   });
 
+const createDoctorReviewSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().trim().min(3).max(1000)
+});
+
 module.exports = {
   doctorIdParamsSchema,
-  updatePatientProfileSchema
+  updatePatientProfileSchema,
+  createDoctorReviewSchema
 };

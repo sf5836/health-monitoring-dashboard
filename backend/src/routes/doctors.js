@@ -30,6 +30,11 @@ router.get(
 	doctorController.getPublicDoctorReviews
 );
 router.get(
+	'/:doctorId/blogs/public',
+	validate({ params: doctorIdParamsSchema }),
+	doctorController.getPublicDoctorBlogs
+);
+router.get(
 	'/:doctorId/public',
 	validate({ params: doctorIdParamsSchema }),
 	doctorController.getPublicDoctorById

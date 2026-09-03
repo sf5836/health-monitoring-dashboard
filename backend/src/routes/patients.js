@@ -3,7 +3,7 @@ const verifyToken = require('../middleware/verifyToken');
 const checkRole = require('../middleware/checkRole');
 const patientController = require('../controllers/patientController');
 const validate = require('../middleware/validate');
-const { doctorIdParamsSchema, updatePatientProfileSchema } = require('../schemas/patientSchemas');
+const { doctorIdParamsSchema, updatePatientProfileSchema, createDoctorReviewSchema } = require('../schemas/patientSchemas');
 
 const router = express.Router();
 
@@ -13,6 +13,11 @@ router.get('/me/dashboard', patientController.getMyDashboard);
 router.get('/me/profile', patientController.getMyProfile);
 router.patch('/me/profile', validate({ body: updatePatientProfileSchema }), patientController.updateMyProfile);
 router.get('/me/doctors', patientController.getMyDoctors);
+router.post(
+	'/me/doctors/:doctorId/reviews',
+	validate({ params: doctorIdParamsSchema, body: createDoctorReviewSchema }),
+	patientController.createDoctorReview
+);
 router.post(
 	'/me/doctors/:doctorId/connect',
 	validate({ params: doctorIdParamsSchema }),

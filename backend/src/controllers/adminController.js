@@ -771,6 +771,8 @@ async function rejectBlog(req, res, next) {
   }
 }
 
+const DEFAULT_BLOG_COVER_URL = 'https://placehold.co/640x360/e8f9f2/0d5c45?text=Health+Blog';
+
 async function createBlog(req, res, next) {
   try {
     const adminId = req.user.id;
@@ -780,13 +782,15 @@ async function createBlog(req, res, next) {
       throw badRequest('title and content are required');
     }
 
+    const normalizedCoverImageUrl = String(coverImageUrl || '').trim() || DEFAULT_BLOG_COVER_URL;
+
     const blog = await Blog.create({
       authorId: adminId,
       authorRole: 'admin',
       title,
       excerpt,
       content,
-      coverImageUrl,
+      coverImageUrl: normalizedCoverImageUrl,
       category,
       tags: Array.isArray(tags) ? tags : [],
       status: status || 'published',

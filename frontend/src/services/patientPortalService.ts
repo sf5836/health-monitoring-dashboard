@@ -72,6 +72,7 @@ export type PortalAppointment = {
 
 export type PortalDashboard = {
   latestVitals: PortalVitalRecord[];
+  currentRiskLevel: RiskLevel;
   metrics: {
     highRiskCount: number;
     upcomingAppointments: number;
@@ -472,6 +473,7 @@ export async function getPatientDashboard(): Promise<PortalDashboard> {
   const response = await apiRequest<
     ApiEnvelope<{
       latestVitals: BackendVitalRecord[];
+      currentRiskLevel?: RiskLevel;
       metrics: {
         highRiskCount: number;
         upcomingAppointments: number;
@@ -483,6 +485,7 @@ export async function getPatientDashboard(): Promise<PortalDashboard> {
 
   return {
     latestVitals: (response.data.latestVitals || []).map(mapVital),
+    currentRiskLevel: response.data.currentRiskLevel || response.data.latestVitals?.[0]?.riskLevel || 'normal',
     metrics: {
       highRiskCount: response.data.metrics?.highRiskCount || 0,
       upcomingAppointments: response.data.metrics?.upcomingAppointments || 0,

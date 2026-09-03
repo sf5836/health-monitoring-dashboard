@@ -1,13 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   getPublicDoctorById,
+  getPublicDoctorBlogs,
   getPublicDoctorReviews,
+  submitDoctorReview,
+  type PublicBlogCard,
   type PublicDoctorDetail,
   type PublicDoctorReview
 } from '../../services/publicContentService';
 import { ROUTE_PATHS } from '../../routes/routePaths';
 import { subscribeProfilePhotoUpdates } from '../../services/profilePhotoEvents';
+import { expireCurrentSession, getSessionDashboardRoute, isSessionActive } from '../../services/authSession';
 
 function fallbackDoctor(id = 'doctor'): PublicDoctorDetail {
   return {
@@ -97,11 +101,22 @@ function reviewBreakdown(totalReviews: number, average: number) {
   }));
 }
 
+function reviewStars(rating: number): string {
+  const roundedRating = Math.max(0, Math.min(5, Math.round(rating)));
+  return `${'★'.repeat(roundedRating)}${'☆'.repeat(5 - roundedRating)}`;
+}
+
 export default function DoctorDetailPage() {
   const navigate = useNavigate();
   const { id = '' } = useParams();
   const [doctor, setDoctor] = useState<PublicDoctorDetail>(fallbackDoctor(id));
   const [reviews, setReviews] = useState<PublicDoctorReview[]>([]);
+  const [blogs, setBlogs] = useState<PublicBlogCard[]>([]);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewMessage, setReviewMessage] = useState('');
+  const [reviewError, setReviewError] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
   const [activeTab, setActiveTab] = useState<'about' | 'qualifications' | 'reviews' | 'availability' | 'blogs'>('about');
   const [consultationType, setConsultationType] = useState<'in-person' | 'teleconsult'>('in-person');
   const [consultationDate, setConsultationDate] = useState('');
@@ -119,20 +134,23 @@ export default function DoctorDetailPage() {
 
       setLoading(true);
       try {
-        const [details, doctorReviews] = await Promise.all([
+        const [details, doctorReviews, doctorBlogs] = await Promise.all([
           getPublicDoctorById(id),
-          getPublicDoctorReviews(id, 12)
+          getPublicDoctorReviews(id, 12),
+          getPublicDoctorBlogs(id)
         ]);
 
         if (!cancelled) {
           setDoctor(details);
           setReviews(doctorReviews);
+          setBlogs(doctorBlogs);
           setError('');
         }
       } catch {
         if (!cancelled) {
           setDoctor(fallbackDoctor(id));
           setReviews([]);
+          setBlogs([]);
           setError('Unable to load real-time doctor details right now.');
         }
       } finally {
@@ -179,7 +197,7 @@ export default function DoctorDetailPage() {
 
   const qualifications = useMemo(() => extractQualifications(doctor.qualifications), [doctor.qualifications]);
 
-  const totalReviewCount = Math.max(doctor.reviewsCount, reviews.length, 1);
+  const totalReviewCount = Math.max(doctor.reviewsCount, reviews.length, 0);
   const ratingRows = useMemo(() => reviewBreakdown(totalReviewCount, doctor.rating), [doctor.rating, totalReviewCount]);
 
   function scrollToSection(tab: keyof typeof sectionIds) {
@@ -191,11 +209,11 @@ export default function DoctorDetailPage() {
   }
 
   function handleConnect() {
-    navigate(ROUTE_PATHS.auth.login);
+    navigate(isSessionActive() ? ROUTE_PATHS.patient.dashboard : ROUTE_PATHS.auth.login);
   }
 
   function handleBookAppointment() {
-    navigate(ROUTE_PATHS.auth.login);
+    navigate(isSessionActive() ? ROUTE_PATHS.patient.appointments : ROUTE_PATHS.auth.login);
   }
 
   function handleCheckAvailability() {
@@ -204,7 +222,32 @@ export default function DoctorDetailPage() {
       return;
     }
     setError('');
-    navigate(ROUTE_PATHS.auth.login);
+    navigate(isSessionActive() ? ROUTE_PATHS.patient.appointments : ROUTE_PATHS.auth.login);
+  }
+
+  async function handleLogout() {
+    await expireCurrentSession();
+    navigate(ROUTE_PATHS.public.home);
+  }
+
+  async function handleReviewSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmittingReview(true);
+    setReviewError('');
+    setReviewMessage('');
+    try {
+      await submitDoctorReview(id, { rating: reviewRating, comment: reviewComment });
+      setReviewComment('');
+      setReviewMessage('Your review was published successfully.');
+      const refreshedReviews = await getPublicDoctorReviews(id, 12);
+      setReviews(refreshedReviews);
+      const refreshedDoctor = await getPublicDoctorById(id);
+      setDoctor(refreshedDoctor);
+    } catch (error) {
+      setReviewError(error instanceof Error ? error.message : 'Unable to submit your review.');
+    } finally {
+      setSubmittingReview(false);
+    }
   }
 
   return (
@@ -230,12 +273,17 @@ export default function DoctorDetailPage() {
           </nav>
 
           <div className="hm-auth-actions">
-            <Link to={ROUTE_PATHS.auth.login} className="hm-btn hm-btn-outline">
-              Login
-            </Link>
-            <Link to={ROUTE_PATHS.auth.register} className="hm-btn hm-btn-solid">
-              Register
-            </Link>
+            {isSessionActive() ? (
+              <>
+                <Link to={getSessionDashboardRoute() || ROUTE_PATHS.public.home} className="hm-btn hm-btn-outline">Dashboard</Link>
+                <button type="button" className="hm-btn hm-btn-solid" onClick={handleLogout}>Logout</button>
+              </>
+            ) : (
+              <>
+                <Link to={ROUTE_PATHS.auth.login} className="hm-btn hm-btn-outline">Login</Link>
+                <Link to={ROUTE_PATHS.auth.register} className="hm-btn hm-btn-solid">Register</Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -349,11 +397,19 @@ export default function DoctorDetailPage() {
             </article>
 
             <article id="doctor-reviews" className="hm-doctor-panel">
-              <h2>Patient Reviews</h2>
+              <div className="hm-review-section-heading">
+                <div>
+                  <p className="hm-panel-kicker">PATIENT FEEDBACK</p>
+                  <h2>Reviews from our patients</h2>
+                  <p>Real experiences from patients who have consulted with {doctor.name}.</p>
+                </div>
+                <span className="hm-review-count-badge">{totalReviewCount} reviews</span>
+              </div>
               <div className="hm-review-overview">
                 <div className="hm-review-score">
                   <strong>{doctor.rating.toFixed(1)}</strong>
-                  <p>{Math.max(doctor.reviewsCount, reviews.length)} reviews</p>
+                  <span className="hm-review-score-stars">{reviewStars(doctor.rating)}</span>
+                  <p>Overall rating</p>
                 </div>
 
                 <div className="hm-review-bars" aria-label="Rating distribution">
@@ -378,7 +434,7 @@ export default function DoctorDetailPage() {
                         <h4>{maskPatientName(review.name)}</h4>
                         <p>{review.date}</p>
                       </div>
-                      <span className="hm-review-stars">★★★★★</span>
+                      <span className="hm-review-stars">{reviewStars(review.rating)}</span>
                     </div>
                     <p>{review.quote}</p>
                   </article>
@@ -387,6 +443,40 @@ export default function DoctorDetailPage() {
                   <p className="hm-subtext">No review comments available yet for this doctor.</p>
                 ) : null}
               </div>
+
+              {isSessionActive() && getSessionDashboardRoute() === ROUTE_PATHS.patient.dashboard ? (
+                <form className="hm-doctor-review-form" onSubmit={handleReviewSubmit}>
+                  <h3>Share your experience</h3>
+                  <div className="hm-review-form-row">
+                    <label>
+                      Rating
+                      <span className="hm-rating-picker" role="radiogroup" aria-label="Choose a rating">
+                        {[1, 2, 3, 4, 5].map((value) => (
+                          <button
+                            key={value}
+                            type="button"
+                            className={value <= reviewRating ? 'active' : ''}
+                            onClick={() => setReviewRating(value)}
+                            aria-label={`${value} out of 5 stars`}
+                            aria-pressed={value <= reviewRating}
+                          >
+                            {value <= reviewRating ? '★' : '☆'}
+                          </button>
+                        ))}
+                      </span>
+                    </label>
+                    <label className="hm-review-comment-field">
+                      Comment
+                      <textarea value={reviewComment} onChange={(event) => setReviewComment(event.target.value)} minLength={3} maxLength={1000} required placeholder="Tell other patients about your experience" />
+                    </label>
+                  </div>
+                  {reviewError ? <p className="hm-doctor-error">{reviewError}</p> : null}
+                  {reviewMessage ? <p className="hm-review-success">{reviewMessage}</p> : null}
+                  <button type="submit" className="hm-btn hm-btn-solid" disabled={submittingReview}>
+                    {submittingReview ? 'Submitting...' : 'Submit Review'}
+                  </button>
+                </form>
+              ) : null}
             </article>
 
             <article id="doctor-availability" className="hm-doctor-panel">
@@ -396,10 +486,21 @@ export default function DoctorDetailPage() {
 
             <article id="doctor-blogs" className="hm-doctor-panel">
               <h2>Blogs</h2>
-              <p>Articles by {doctor.name} will appear here after publication.</p>
-              <Link to={ROUTE_PATHS.public.blogs} className="hm-btn hm-btn-outline" style={{ marginTop: '1rem' }}>
-                View All Blogs
-              </Link>
+              {blogs.length > 0 ? (
+                <div className="hm-doctor-blog-list">
+                  {blogs.map((blog) => (
+                    <Link key={blog.id} to={`${ROUTE_PATHS.public.blogs}/${blog.id}`} className="hm-doctor-blog-item">
+                      <div>
+                        <span className="hm-pill">{blog.category}</span>
+                        <h3>{blog.title}</h3>
+                        <p>{blog.excerpt}</p>
+                      </div>
+                      <span aria-hidden="true">→</span>
+                    </Link>
+                  ))}
+                </div>
+              ) : <p>No published articles by {doctor.name} yet.</p>}
+              <Link to={ROUTE_PATHS.public.blogs} className="hm-btn hm-btn-outline" style={{ marginTop: '1rem' }}>View All Blogs</Link>
             </article>
           </div>
 

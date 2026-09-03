@@ -51,6 +51,7 @@ export type PublicDoctorReview = {
   name: string;
   date: string;
   quote: string;
+  rating: number;
 };
 
 export type PublicBlogCard = {
@@ -61,6 +62,11 @@ export type PublicBlogCard = {
   date: string;
   excerpt: string;
   coverImageUrl?: string;
+};
+
+export type PublicBlogDetail = PublicBlogCard & {
+  content: string;
+  views: number;
 };
 
 export type PublicTestimonialCard = {
@@ -147,7 +153,10 @@ type ApiDoctorReview = {
   name?: string;
   date?: string;
   quote?: string;
+  rating?: number;
 };
+
+type DoctorBlogListResponse = { success: boolean; data: { blogs: ApiBlog[] } };
 
 type DoctorReviewListResponse = {
   success: boolean;
@@ -155,6 +164,8 @@ type DoctorReviewListResponse = {
     reviews: ApiDoctorReview[];
   };
 };
+
+const DEFAULT_BLOG_COVER_URL = 'https://placehold.co/640x360/e8f9f2/0d5c45?text=Health+Blog';
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
@@ -174,9 +185,21 @@ function backendOrigin(): string {
 function normalizeAssetUrl(fileUrl?: string): string {
   const raw = String(fileUrl || '').trim();
   if (!raw) return '';
+  if (/^data:/i.test(raw)) return raw;
   if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith('//')) return `https:${raw}`;
   if (raw.startsWith('/')) return `${backendOrigin()}${raw}`;
-  return `${backendOrigin()}/${raw}`;
+  return `${backendOrigin()}/${raw.replace(/^\.?\//, '')}`;
+}
+
+function normalizeBlogCoverUrl(fileUrl?: string): string {
+  const raw = String(fileUrl || '').trim();
+  if (!raw) return DEFAULT_BLOG_COVER_URL;
+  if (/^data:/i.test(raw)) return raw;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith('//')) return `https:${raw}`;
+  if (raw.startsWith('/')) return `${backendOrigin()}${raw}`;
+  return `${backendOrigin()}/${raw.replace(/^\.?\//, '')}`;
 }
 
 function mapDoctor(item: ApiDoctor): PublicDoctorCard {
@@ -226,7 +249,15 @@ function mapBlog(item: ApiBlog): PublicBlogCard {
     author: item.authorId?.fullName || 'HealthMonitor Pro Team',
     date,
     excerpt: item.excerpt || item.content?.slice(0, 120) || 'Read more from HealthMonitor Pro experts.',
-    coverImageUrl: normalizeAssetUrl(item.coverImageUrl)
+    coverImageUrl: normalizeBlogCoverUrl(item.coverImageUrl)
+  };
+}
+
+function mapBlogDetail(item: ApiBlog & { views?: number }): PublicBlogDetail {
+  return {
+    ...mapBlog(item),
+    content: item.content || item.excerpt || 'This article is being prepared by our health experts.',
+    views: item.views || 0
   };
 }
 
@@ -259,7 +290,8 @@ function mapDoctorReview(item: ApiDoctorReview): PublicDoctorReview {
     id: item.id || item._id || crypto.randomUUID(),
     name,
     date: parsedDate && !Number.isNaN(parsedDate.getTime()) ? dateFormatter.format(parsedDate) : 'Recent',
-    quote
+    quote,
+    rating: item.rating ?? 5
   };
 }
 
@@ -320,9 +352,31 @@ export async function getPublicDoctorReviews(
     .filter((item) => item.quote.trim().length > 0 && item.name.trim().length > 0);
 }
 
+export async function getPublicDoctorBlogs(doctorId: string): Promise<PublicBlogCard[]> {
+  const response = await apiRequest<DoctorBlogListResponse>(`/doctors/${doctorId}/blogs/public`);
+  return (response.data.blogs || []).map(mapBlog);
+}
+
+export async function submitDoctorReview(
+  doctorId: string,
+  payload: { rating: number; comment: string }
+): Promise<void> {
+  await apiRequest(`/patients/me/doctors/${doctorId}/reviews`, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
 export async function getPublicBlogs(limit = 20): Promise<PublicBlogCard[]> {
   const response = await apiRequest<BlogListResponse>(`/blogs/public?limit=${limit}`);
   return (response.data.blogs || []).map(mapBlog);
+}
+
+export async function getPublicBlogById(blogId: string): Promise<PublicBlogDetail> {
+  const response = await apiRequest<{ success: boolean; data: { blog: ApiBlog & { views?: number } } }>(
+    `/blogs/public/${blogId}`
+  );
+  return mapBlogDetail(response.data.blog);
 }
 
 export async function getPublicTestimonials(limit = 12): Promise<PublicTestimonialCard[]> {

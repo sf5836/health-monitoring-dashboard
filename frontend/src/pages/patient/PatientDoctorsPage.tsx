@@ -12,7 +12,7 @@ import {
 } from '../../services/patientPortalService';
 import { subscribeProfilePhotoUpdates } from '../../services/profilePhotoEvents';
 
-const SPECIALIZATIONS = ['All', 'Cardiology', 'Neurology', 'Diabetes', 'Eye', 'General'];
+const FALLBACK_SPECIALIZATIONS = ['All', 'Cardiology', 'Neurology', 'Diabetes', 'Eye', 'General'];
 
 function initials(name: string): string {
   const parts = name.trim().split(' ').filter(Boolean);
@@ -37,6 +37,29 @@ export default function PatientDoctorsPage() {
     () => new Set(connectedDoctors.map((doctor) => doctor.doctorUserId)),
     [connectedDoctors]
   );
+
+  const specializationOptions = useMemo(() => {
+    const values = (directory?.doctors || [])
+      .map((doctor) => doctor.specialization)
+      .filter((value): value is string => Boolean(value && value.trim()));
+
+    const uniqueValues = Array.from(new Set(values.map((value) => value.trim())));
+    const allOptions = [...FALLBACK_SPECIALIZATIONS, ...uniqueValues];
+
+    return Array.from(new Set(allOptions)).filter((value) => value !== 'All' || true);
+  }, [directory]);
+
+  const visibleDoctors = useMemo(() => {
+    if (!directory) return [];
+    if (specialization === 'All') return directory.doctors;
+
+    const selected = specialization.trim().toLowerCase();
+
+    return directory.doctors.filter((doctor) => {
+      const doctorSpecialization = (doctor.specialization || '').trim().toLowerCase();
+      return doctorSpecialization.includes(selected);
+    });
+  }, [directory, specialization]);
 
   useEffect(() => {
     let cancelled = false;
@@ -272,7 +295,7 @@ export default function PatientDoctorsPage() {
             </div>
 
             <div className="patient-doctor-filter-pills">
-              {SPECIALIZATIONS.map((item) => (
+              {specializationOptions.map((item) => (
                 <button
                   key={item}
                   type="button"
@@ -287,11 +310,11 @@ export default function PatientDoctorsPage() {
               ))}
             </div>
 
-            {!directory || directory.doctors.length === 0 ? (
+            {!directory || visibleDoctors.length === 0 ? (
               <p className="patient-empty-state">No doctors found for this filter.</p>
             ) : (
               <div className="patient-grid patient-directory-grid">
-                {directory.doctors.map((doctor) => {
+                {visibleDoctors.map((doctor) => {
                   const alreadyConnected = connectedIdSet.has(doctor.doctorUserId);
                   return (
                     <article key={doctor.doctorUserId} className="patient-card patient-directory-card">

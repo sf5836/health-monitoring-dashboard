@@ -7,7 +7,11 @@ const blogSchema = new mongoose.Schema(
 		title: { type: String, required: true, trim: true },
 		excerpt: { type: String, trim: true },
 		content: { type: String, required: true },
-		coverImageUrl: { type: String, trim: true },
+		coverImageUrl: {
+			type: String,
+			trim: true,
+			default: 'https://placehold.co/640x360/e8f9f2/0d5c45?text=Health+Blog'
+		},
 		category: { type: String, trim: true },
 		tags: [{ type: String, trim: true }],
 		status: {

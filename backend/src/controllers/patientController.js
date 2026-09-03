@@ -6,6 +6,7 @@ const User = require('../models/User');
 const VitalRecord = require('../models/VitalRecord');
 const Appointment = require('../models/Appointment');
 const Prescription = require('../models/Prescription');
+const DoctorReview = require('../models/DoctorReview');
 const { uploadBuffer } = require('../services/s3Service');
 
 function badRequest(message) {
@@ -20,6 +21,15 @@ async function ensurePatientProfile(userId) {
     profile = await PatientProfile.create({ userId, connectedDoctorIds: [] });
   }
   return profile;
+}
+
+function serializePatientProfileForOwner(profile) {
+  const plainProfile = profile && typeof profile.toObject === 'function' ? profile.toObject() : { ...profile };
+
+  delete plainProfile.riskOverride;
+  delete plainProfile.doctorNotes;
+
+  return plainProfile;
 }
 
 function badRequest(message) {
@@ -93,7 +103,7 @@ async function getMyDashboard(req, res, next) {
   try {
     const patientId = req.user.id;
 
-    await ensurePatientProfile(patientId);
+    const profile = await ensurePatientProfile(patientId);
 
     const [latestVitals, highRiskCount, upcomingAppointments, prescriptionCount] =
       await Promise.all([
@@ -107,12 +117,20 @@ async function getMyDashboard(req, res, next) {
         Prescription.countDocuments({ patientId })
       ]);
 
+    const currentRiskLevel = profile.riskOverride?.level || latestVitals[0]?.riskLevel || 'normal';
+    const effectiveHighRiskCount = profile.riskOverride?.level
+      ? currentRiskLevel === 'high' ? 1 : 0
+      : highRiskCount;
+
     res.json({
       success: true,
       data: {
-        latestVitals,
+        latestVitals: latestVitals.map((vital, index) =>
+          index === 0 ? { ...vital, riskLevel: currentRiskLevel } : vital
+        ),
+        currentRiskLevel,
         metrics: {
-          highRiskCount,
+          highRiskCount: effectiveHighRiskCount,
           upcomingAppointments: upcomingAppointments.length,
           prescriptionCount
         },
@@ -131,7 +149,7 @@ async function getMyProfile(req, res, next) {
 
     res.json({
       success: true,
-      data: { profile }
+      data: { profile: serializePatientProfileForOwner(profile) }
     });
   } catch (error) {
     next(error);
@@ -179,7 +197,7 @@ async function updateMyProfile(req, res, next) {
     res.json({
       success: true,
       message: 'Profile updated successfully',
-      data: { profile }
+      data: { profile: serializePatientProfileForOwner(profile) }
     });
   } catch (error) {
     next(error);
@@ -203,6 +221,41 @@ async function getMyDoctors(req, res, next) {
       data: { doctors }
     });
   } catch (error) {
+    next(error);
+  }
+}
+
+async function createDoctorReview(req, res, next) {
+  try {
+    const patientId = req.user.id;
+    const { doctorId } = req.params;
+    const { rating, comment } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(doctorId)) throw badRequest('Invalid doctorId');
+    const completedAppointment = await Appointment.exists({ patientId, doctorId, status: 'completed' });
+    if (!completedAppointment) {
+      const error = new Error('Complete a consultation with this doctor before reviewing');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const review = await DoctorReview.create({ doctorId, patientId, rating, comment: String(comment).trim() });
+    const aggregate = await DoctorReview.aggregate([
+      { $match: { doctorId: new mongoose.Types.ObjectId(doctorId) } },
+      { $group: { _id: '$doctorId', average: { $avg: '$rating' }, count: { $sum: 1 } } }
+    ]);
+    const summary = aggregate[0] || { average: 0, count: 0 };
+    await DoctorProfile.updateOne(
+      { userId: doctorId },
+      { $set: { rating: Number(summary.average.toFixed(1)), reviewsCount: summary.count } }
+    );
+
+    res.status(201).json({ success: true, message: 'Review submitted successfully', data: { review } });
+  } catch (error) {
+    if (error?.code === 11000) {
+      error.statusCode = 409;
+      error.message = 'You have already reviewed this doctor';
+    }
     next(error);
   }
 }
@@ -319,6 +372,7 @@ module.exports = {
   getMyProfile,
   updateMyProfile,
   getMyDoctors,
+  createDoctorReview,
   connectDoctor,
   disconnectDoctor,
   getMyAppointments,

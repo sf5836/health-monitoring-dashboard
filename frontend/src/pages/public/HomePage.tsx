@@ -14,15 +14,21 @@ import {
 import { getSessionDashboardRoute, isSessionActive } from '../../services/authSession';
 import { ROUTE_PATHS } from '../../routes/routePaths';
 
-const stats = [
-  { value: '10,000+', label: 'Patients' },
-  { value: '500+', label: 'Doctors' },
-  { value: '50,000+', label: 'Consultations' },
-  { value: '2,000+', label: 'Articles' }
-];
-
-const BLOG_FALLBACK_COVER = 'https://placehold.co/640x360/e8f9f2/0d5c45?text=Health+Blog';
+const BLOG_FALLBACK_COVER =
+  'linear-gradient(135deg, rgba(17, 94, 72, 0.96) 0%, rgba(45, 196, 141, 0.86) 48%, rgba(232, 249, 242, 0.9) 100%)';
 const DOCTOR_FALLBACK_AVATAR = 'https://placehold.co/160x160/e8f9f2/0d5c45?text=Doctor';
+
+function getBlogCoverStyle(coverImageUrl?: string) {
+  const resolvedUrl = coverImageUrl && coverImageUrl.trim() ? coverImageUrl.trim() : '';
+  return {
+    backgroundImage: resolvedUrl
+      ? `url("${resolvedUrl}"), ${BLOG_FALLBACK_COVER}`
+      : BLOG_FALLBACK_COVER,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat'
+  };
+}
 
 const quickLinks = ['Home', 'Doctors', 'Blogs', 'About', 'Contact'];
 const specializations = ['Cardiology', 'Endocrinology', 'General Medicine', 'Nutrition', 'Pulmonology'];
@@ -293,7 +299,6 @@ export default function HomePage() {
                     </div>
                   </div>
                 </div>
-                <div className="hm-summary-pill">Active Consultations: 04</div>
               </div>
             </div>
           </div>
@@ -372,17 +377,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="hm-stats-section">
-          <div className="section-shell hm-stats-grid">
-            {stats.map((stat) => (
-              <article key={stat.label} className="hm-stat-card">
-                <h3>{stat.value}</h3>
-                <p>{stat.label}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
         <section className="section-shell hm-section" id="blogs">
           <div className="hm-section-heading">
             <h2>Featured Blogs</h2>
@@ -390,12 +384,8 @@ export default function HomePage() {
 
           <div className="hm-card-grid hm-card-grid-3">
             {featuredBlogs.map((blog) => (
-              <article key={blog.id} className="hm-card hm-blog-card">
-                <div
-                  className="hm-blog-cover"
-                  aria-hidden="true"
-                  style={{ backgroundImage: `url(${blog.coverImageUrl || BLOG_FALLBACK_COVER})` }}
-                />
+              <Link key={blog.id} to={`${ROUTE_PATHS.public.blogs}/${blog.id}`} className="hm-card hm-blog-card">
+                <div className="hm-blog-cover" aria-hidden="true" style={getBlogCoverStyle(blog.coverImageUrl)} />
                 <div className="hm-blog-content">
                   <span className="hm-pill">{blog.category}</span>
                   <h3>{blog.title}</h3>
@@ -405,7 +395,7 @@ export default function HomePage() {
                   <p className="hm-blog-excerpt">{blog.excerpt}</p>
                   <span className="hm-read-time">5 min read</span>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
 

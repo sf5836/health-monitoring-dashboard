@@ -6,6 +6,7 @@ const VitalRecord = require('../models/VitalRecord');
 const Appointment = require('../models/Appointment');
 const Prescription = require('../models/Prescription');
 const Blog = require('../models/Blog');
+const DoctorReview = require('../models/DoctorReview');
 const DoctorProfile = require('../models/DoctorProfile');
 const { uploadBuffer } = require('../services/s3Service');
 
@@ -330,6 +331,23 @@ async function getPublicDoctorById(req, res, next) {
   }
 }
 
+async function getPublicDoctorBlogs(req, res, next) {
+  try {
+    const { doctorId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(doctorId)) throw badRequest('Invalid doctorId');
+
+    const blogs = await Blog.find({ authorId: doctorId, authorRole: 'doctor', status: 'published' })
+      .sort({ publishedAt: -1, createdAt: -1 })
+      .limit(12)
+      .populate('authorId', 'fullName')
+      .lean();
+
+    res.json({ success: true, data: { blogs } });
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function getPublicTestimonials(req, res, next) {
   try {
     const limit = Math.min(Math.max(Number(req.query.limit || 12), 1), 50);
@@ -368,11 +386,7 @@ async function getPublicDoctorReviews(req, res, next) {
       throw badRequest('Invalid doctorId');
     }
 
-    const reviews = await Appointment.find({
-      doctorId,
-      status: 'completed',
-      notes: { $exists: true, $ne: '' }
-    })
+    const reviews = await DoctorReview.find({ doctorId })
       .sort({ updatedAt: -1 })
       .limit(limit)
       .populate('patientId', 'fullName')
@@ -383,7 +397,8 @@ async function getPublicDoctorReviews(req, res, next) {
         id: item._id,
         name: String(item.patientId?.fullName || '').trim(),
         date: item.updatedAt || item.createdAt,
-        quote: String(item.notes || '').trim()
+        quote: String(item.comment || '').trim(),
+        rating: item.rating
       }))
       .filter((item) => item.quote.length > 0 && item.name.length > 0);
 
@@ -807,6 +822,8 @@ async function getMyBlogs(req, res, next) {
   }
 }
 
+const DEFAULT_BLOG_COVER_URL = 'https://placehold.co/640x360/e8f9f2/0d5c45?text=Health+Blog';
+
 async function createMyBlog(req, res, next) {
   try {
     const doctorId = req.user.id;
@@ -816,13 +833,15 @@ async function createMyBlog(req, res, next) {
       throw badRequest('title and content are required');
     }
 
+    const normalizedCoverImageUrl = String(coverImageUrl || '').trim() || DEFAULT_BLOG_COVER_URL;
+
     const blog = await Blog.create({
       authorId: doctorId,
       authorRole: 'doctor',
       title,
       excerpt,
       content,
-      coverImageUrl,
+      coverImageUrl: normalizedCoverImageUrl,
       category,
       tags: Array.isArray(tags) ? tags : [],
       status: 'draft'
@@ -920,6 +939,7 @@ async function submitMyBlog(req, res, next) {
 module.exports = {
   getPublicDoctors,
   getPublicDoctorById,
+  getPublicDoctorBlogs,
   getPublicTestimonials,
   getPublicDoctorReviews,
   getMyDashboard,

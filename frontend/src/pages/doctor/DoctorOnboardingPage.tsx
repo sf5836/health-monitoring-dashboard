@@ -29,6 +29,24 @@ const WEEK_DAYS: DoctorDay[] = [
   'sunday'
 ];
 
+const DOCTOR_SPECIALIZATIONS = [
+  'Cardiology',
+  'Neurology',
+  'Dermatology',
+  'Orthopedics',
+  'Pediatrics',
+  'Gastroenterology',
+  'Endocrinology',
+  'Pulmonology',
+  'General Medicine',
+  'Psychiatry',
+  'Urology',
+  'Gynecology',
+  'Oncology',
+  'Ophthalmology',
+  'ENT'
+];
+
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -313,13 +331,18 @@ export default function DoctorOnboardingPage() {
             <div className="doctor-onboarding-grid-2">
               <label>
                 Specialization
-                <input
-                  type="text"
-                  placeholder="Cardiology"
+                <select
                   value={specialization}
                   onChange={(event) => setSpecialization(event.target.value)}
                   required
-                />
+                >
+                  <option value="">Select specialization</option>
+                  {DOCTOR_SPECIALIZATIONS.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label>

@@ -115,6 +115,7 @@ function buildDemoDashboard(tick: number): { dashboard: PortalDashboard; weeklyV
         upcomingAppointments: 0,
         prescriptionCount: 0
       },
+      currentRiskLevel: latestVitals[0]?.riskLevel || 'normal',
       upcomingAppointments: []
     },
     weeklyVitals
@@ -219,7 +220,7 @@ export default function PatientDashboardPage() {
         value: formatBloodPressure(latestVital.bloodPressure),
         unit: 'mmHg',
         delta: bpDelta === null ? '-' : `${bpDelta > 0 ? '+' : ''}${bpDelta} vs previous`,
-        risk: latestVital.riskLevel
+        risk: dashboard?.currentRiskLevel || latestVital.riskLevel
       },
       {
         label: 'Heart Rate',
@@ -229,24 +230,24 @@ export default function PatientDashboardPage() {
           latestVital.heartRate && previousVital?.heartRate
             ? `${latestVital.heartRate - previousVital.heartRate} vs previous`
             : '-',
-        risk: latestVital.riskLevel
+        risk: dashboard?.currentRiskLevel || latestVital.riskLevel
       },
       {
         label: 'Blood Glucose',
         value: latestVital.glucose?.value ? String(latestVital.glucose.value) : '-',
         unit: 'mg/dL',
         delta: '-',
-        risk: latestVital.riskLevel
+        risk: dashboard?.currentRiskLevel || latestVital.riskLevel
       },
       {
         label: 'Oxygen (SpO2)',
         value: latestVital.spo2 ? String(latestVital.spo2) : '-',
         unit: '%',
         delta: '-',
-        risk: latestVital.riskLevel
+        risk: dashboard?.currentRiskLevel || latestVital.riskLevel
       }
     ];
-  }, [latestVital, previousVital]);
+  }, [dashboard?.currentRiskLevel, latestVital, previousVital]);
 
   const sparklineCards = useMemo(() => {
     const heartRates = metricSeries(weeklyVitals, (item) => item.heartRate);
