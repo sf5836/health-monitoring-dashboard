@@ -326,7 +326,7 @@ export default function HomePage() {
                   <span>{doctor.fee}</span>
                 </div>
                 <Link
-                  to={ROUTE_PATHS.public.doctors}
+                  to={`${ROUTE_PATHS.public.doctors}/${doctor.id}`}
                   className="hm-btn hm-btn-outline hm-card-btn"
                   aria-label={`View ${doctor.name} profile`}
                 >
@@ -562,8 +562,8 @@ export default function HomePage() {
           <div className="hm-footer-bottom">
             <p>Copyright 2026 HealthMonitor Pro. All rights reserved.</p>
             <div>
-              <a href="#">Privacy Policy</a>
-              <a href="#">Terms of Service</a>
+              <Link to={ROUTE_PATHS.public.privacy}>Privacy Policy</Link>
+              <Link to={ROUTE_PATHS.public.terms}>Terms of Service</Link>
             </div>
           </div>
         </div>

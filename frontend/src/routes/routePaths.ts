@@ -4,7 +4,9 @@ export const ROUTE_PATHS = {
     doctors: '/doctors',
     doctorDetail: '/doctors/:id',
     blogs: '/blogs',
-    blogDetail: '/blogs/:id'
+    blogDetail: '/blogs/:id',
+    terms: '/terms',
+    privacy: '/privacy'
   },
   auth: {
     login: '/login',

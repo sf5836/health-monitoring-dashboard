@@ -251,8 +251,20 @@ export default function LoginPage() {
                         className="hm-login-eye"
                         type="button"
                         onClick={() => setShowPassword((current) => !current)}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        title={showPassword ? 'Hide password' : 'Show password'}
                       >
-                        {showPassword ? 'Hide' : 'Show'}
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          {showPassword ? (
+                            <>
+                              <path d="M3 3l18 18" />
+                              <path d="M10.6 10.7a2 2 0 0 0 2.7 2.7" />
+                              <path d="M9.9 5.2A11.4 11.4 0 0 1 12 5c5.2 0 8.8 4.8 9.8 7a17 17 0 0 1-3.2 4.1M6.2 6.2C3.8 7.8 2.4 10.3 2.2 12c.9 2.1 4.5 7 9.8 7 1 0 2-.2 2.8-.5" />
+                            </>
+                          ) : (
+                            <><path d="M2.2 12C3.2 9.8 6.8 5 12 5s8.8 4.8 9.8 7c-1 2.2-4.6 7-9.8 7s-8.8-4.8-9.8-7Z" /><circle cx="12" cy="12" r="2.5" /></>
+                          )}
+                        </svg>
                       </button>
                     </div>
                   </label>
@@ -347,8 +359,12 @@ export default function LoginPage() {
                       className="hm-login-eye hm-login-eye-inline"
                       type="button"
                       onClick={() => setShowNewPassword((current) => !current)}
+                      aria-label={showNewPassword ? 'Hide passwords' : 'Show passwords'}
+                      title={showNewPassword ? 'Hide passwords' : 'Show passwords'}
                     >
-                      {showNewPassword ? 'Hide passwords' : 'Show passwords'}
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        {showNewPassword ? <><path d="M3 3l18 18" /><path d="M10.6 10.7a2 2 0 0 0 2.7 2.7" /><path d="M9.9 5.2A11.4 11.4 0 0 1 12 5c5.2 0 8.8 4.8 9.8 7a17 17 0 0 1-3.2 4.1M6.2 6.2C3.8 7.8 2.4 10.3 2.2 12c.9 2.1 4.5 7 9.8 7 1 0 2-.2 2.8-.5" /></> : <><path d="M2.2 12C3.2 9.8 6.8 5 12 5s8.8 4.8 9.8 7c-1 2.2-4.6 7-9.8 7s-8.8-4.8-9.8-7Z" /><circle cx="12" cy="12" r="2.5" /></>}
+                      </svg>
                     </button>
                     <button className="hm-login-submit" type="submit">
                       Reset Password
@@ -670,18 +686,39 @@ export default function LoginPage() {
         }
 
         .hm-login-eye {
+          display: inline-grid;
+          place-items: center;
+          width: 38px;
+          height: 38px;
           border: 0;
           background: transparent;
           color: #0d5c45;
-          font-weight: 700;
-          font-size: 0.76rem;
           cursor: pointer;
-          padding: 0 0.72rem;
+          padding: 0;
+        }
+
+        .hm-login-eye svg {
+          width: 19px;
+          height: 19px;
+          fill: none;
+          stroke: currentColor;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+          stroke-width: 1.8;
+        }
+
+        .hm-login-eye:hover,
+        .hm-login-eye:focus-visible {
+          border-radius: 6px;
+          background: #e8f9f2;
+          outline: none;
         }
 
         .hm-login-eye-inline {
           justify-self: start;
-          padding: 0;
+          width: auto;
+          height: 32px;
+          padding-inline: 0.35rem;
         }
 
         .hm-login-forgot,

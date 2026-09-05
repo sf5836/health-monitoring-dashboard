@@ -38,6 +38,8 @@ import DoctorsPage from '../pages/public/DoctorsPage';
 import HomePage from '../pages/public/HomePage';
 import LoginPage from '../pages/public/LoginPage';
 import RegisterPage from '../pages/public/RegisterPage';
+import PrivacyPage from '../pages/public/PrivacyPage';
+import TermsPage from '../pages/public/TermsPage';
 import {
   getSessionDashboardRoute,
   getSessionRole,
@@ -94,6 +96,8 @@ export function AppRouter() {
       <Route path={ROUTE_PATHS.public.doctorDetail} element={<DoctorDetailPage />} />
       <Route path={ROUTE_PATHS.public.blogs} element={<BlogsPage />} />
       <Route path={ROUTE_PATHS.public.blogDetail} element={<BlogDetailPage />} />
+      <Route path={ROUTE_PATHS.public.terms} element={<TermsPage />} />
+      <Route path={ROUTE_PATHS.public.privacy} element={<PrivacyPage />} />
       <Route
         path={ROUTE_PATHS.auth.login}
         element={
