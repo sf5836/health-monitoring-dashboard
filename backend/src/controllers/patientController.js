@@ -8,6 +8,7 @@ const Appointment = require('../models/Appointment');
 const Prescription = require('../models/Prescription');
 const DoctorReview = require('../models/DoctorReview');
 const { uploadBuffer } = require('../services/s3Service');
+const { createNotification } = require('../services/notificationService');
 
 function badRequest(message) {
   const error = new Error(message);
@@ -287,10 +288,30 @@ async function connectDoctor(req, res, next) {
     }
 
     const profile = await ensurePatientProfile(patientId);
+    const wasAlreadyConnected = profile.connectedDoctorIds.some(
+      (connectedDoctorId) => String(connectedDoctorId) === String(doctorUser._id)
+    );
+
     await PatientProfile.updateOne(
       { _id: profile._id },
       { $addToSet: { connectedDoctorIds: doctorUser._id } }
     );
+
+    if (!wasAlreadyConnected) {
+      const patientUser = await User.findById(patientId).select('fullName email').lean();
+      const patientName = patientUser?.fullName || patientUser?.email || 'A patient';
+
+      await createNotification({
+        userId: doctorUser._id,
+        type: 'patient_connection',
+        title: 'New patient connection',
+        body: `${patientName} connected with you as their doctor.`,
+        metadata: {
+          patientId: String(patientId),
+          doctorId: String(doctorUser._id)
+        }
+      });
+    }
 
     const updated = await PatientProfile.findById(profile._id).lean();
 

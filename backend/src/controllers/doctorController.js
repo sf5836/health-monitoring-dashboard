@@ -805,6 +805,61 @@ async function createPatientPrescription(req, res, next) {
   }
 }
 
+async function updatePatientPrescription(req, res, next) {
+  try {
+    const doctorId = req.user.id;
+    const { prescriptionId } = req.params;
+    const { diagnosis, medications, instructions, followUpDate, pdfUrl } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(prescriptionId)) {
+      throw badRequest('Invalid prescriptionId');
+    }
+
+    const prescription = await Prescription.findOne({ _id: prescriptionId, doctorId });
+    if (!prescription) {
+      const error = new Error('Prescription not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    await ensureConnectedPatient(doctorId, prescription.patientId);
+    const updates = { diagnosis, medications, instructions, followUpDate, pdfUrl };
+    Object.keys(updates).forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+        prescription[key] = updates[key];
+      }
+    });
+    await prescription.save();
+
+    res.json({ success: true, message: 'Prescription updated successfully', data: { prescription } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function deletePatientPrescription(req, res, next) {
+  try {
+    const doctorId = req.user.id;
+    const { prescriptionId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(prescriptionId)) {
+      throw badRequest('Invalid prescriptionId');
+    }
+
+    const prescription = await Prescription.findOne({ _id: prescriptionId, doctorId });
+    if (!prescription) {
+      const error = new Error('Prescription not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    await prescription.deleteOne();
+    res.json({ success: true, message: 'Prescription deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function getMyBlogs(req, res, next) {
   try {
     const doctorId = req.user.id;
@@ -952,6 +1007,8 @@ module.exports = {
   updateMyProfile,
   getMyPrescriptions,
   createPatientPrescription,
+  updatePatientPrescription,
+  deletePatientPrescription,
   getMyBlogs,
   createMyBlog,
   updateMyBlog,

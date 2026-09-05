@@ -820,6 +820,24 @@ export async function createDoctorPrescription(
   return mapPrescription(response.data.prescription);
 }
 
+export async function updateDoctorPrescription(
+  prescriptionId: string,
+  payload: Partial<Parameters<typeof createDoctorPrescription>[1]>
+): Promise<DoctorPrescription> {
+  const response = await apiRequest<ApiEnvelope<{ prescription: BackendPrescription }>>(
+    `/doctors/me/prescriptions/${prescriptionId}`,
+    { method: 'PATCH', body: JSON.stringify(payload) }
+  );
+
+  return mapPrescription(response.data.prescription);
+}
+
+export async function deleteDoctorPrescription(prescriptionId: string): Promise<void> {
+  await apiRequest<ApiEnvelope<Record<string, never>>>(`/doctors/me/prescriptions/${prescriptionId}`, {
+    method: 'DELETE'
+  });
+}
+
 export async function getDoctorBlogs(): Promise<DoctorBlog[]> {
   const response = await apiRequest<ApiEnvelope<{ blogs: BackendBlog[] }>>('/doctors/me/blogs');
   return (response.data.blogs || []).map(mapBlog);

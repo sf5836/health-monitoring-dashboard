@@ -33,6 +33,11 @@ const createPrescriptionSchema = z.object({
   pdfUrl: z.string().url().optional()
 });
 
+const updatePrescriptionSchema = createPrescriptionSchema.partial().refine(
+  (value) => Object.keys(value).length > 0,
+  { message: 'At least one prescription field is required' }
+);
+
 const createDoctorBlogSchema = z.object({
   title: z.string().min(3),
   excerpt: z.string().optional(),
@@ -135,6 +140,7 @@ module.exports = {
   appointmentIdParamsSchema,
   blogIdParamsSchema,
   createPrescriptionSchema,
+  updatePrescriptionSchema,
   createDoctorBlogSchema,
   updateDoctorBlogSchema,
   addPatientNoteSchema,

@@ -94,10 +94,12 @@ export default function PatientNotificationsPage() {
                 {!item.isRead ? (
                   <button
                     type="button"
-                    className="patient-link-button"
+                    className="patient-link-button patient-mark-read-button"
                     onClick={() => handleMarkRead(item.id)}
+                    aria-label="Mark notification as read"
+                    title="Mark notification as read"
                   >
-                    Mark read
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m2.5 12.5 3.2 3.2 6.1-6.2" /><path d="m9.5 12.5 3.2 3.2 8.8-8.9" /></svg>
                   </button>
                 ) : (
                   <span className="patient-risk-pill is-risk-normal">Read</span>

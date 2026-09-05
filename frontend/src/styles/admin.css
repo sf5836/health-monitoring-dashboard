@@ -388,6 +388,31 @@
   padding: 0;
 }
 
+.admin-mark-read-button {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 7px;
+}
+
+.admin-mark-read-button svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.admin-mark-read-button:hover,
+.admin-mark-read-button:focus-visible {
+  background: #e8f9f2;
+  outline: none;
+}
+
 .admin-kpi-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

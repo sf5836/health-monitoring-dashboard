@@ -11,6 +11,7 @@ const {
 	appointmentIdParamsSchema,
 	blogIdParamsSchema,
 	createPrescriptionSchema,
+	updatePrescriptionSchema,
 	createDoctorBlogSchema,
 	updateDoctorBlogSchema,
 	addPatientNoteSchema,
@@ -19,6 +20,7 @@ const {
 	updateDoctorAppointmentSchema
 } = require('../schemas/doctorSchemas');
 const { trendsQuerySchema } = require('../schemas/vitalSchemas');
+const { prescriptionIdParamsSchema } = require('../schemas/prescriptionSchemas');
 
 const router = express.Router();
 
@@ -82,6 +84,16 @@ router.post(
 	'/me/patients/:patientId/prescriptions',
 	validate({ params: patientIdParamsSchema, body: createPrescriptionSchema }),
 	doctorController.createPatientPrescription
+);
+router.patch(
+	'/me/prescriptions/:prescriptionId',
+	validate({ params: prescriptionIdParamsSchema, body: updatePrescriptionSchema }),
+	doctorController.updatePatientPrescription
+);
+router.delete(
+	'/me/prescriptions/:prescriptionId',
+	validate({ params: prescriptionIdParamsSchema }),
+	doctorController.deletePatientPrescription
 );
 
 router.get('/me/blogs', doctorController.getMyBlogs);

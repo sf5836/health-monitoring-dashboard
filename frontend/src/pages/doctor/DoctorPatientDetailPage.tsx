@@ -4,10 +4,12 @@ import { createOrGetConversationWithUser } from '../../services/patientPortalSer
 import {
   addDoctorPatientNote,
   createDoctorPrescription,
+  deleteDoctorPrescription,
   getDoctorAppointments,
   getDoctorPatientDetail,
   getDoctorPatientTrends,
   getDoctorPrescriptions,
+  updateDoctorPrescription,
   type DoctorAppointment,
   type DoctorPatientDetail,
   type DoctorPatientTrends,
@@ -87,6 +89,7 @@ export default function DoctorPatientDetailPage() {
   const [isSavingNote, setIsSavingNote] = useState(false);
 
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
+  const [editingPrescriptionId, setEditingPrescriptionId] = useState<string | null>(null);
   const [prescriptionDiagnosis, setPrescriptionDiagnosis] = useState('');
   const [prescriptionInstructions, setPrescriptionInstructions] = useState('');
   const [followUpDate, setFollowUpDate] = useState('');
@@ -216,24 +219,56 @@ export default function DoctorPatientDetailPage() {
     try {
       setIsCreatingPrescription(true);
 
-      const created = await createDoctorPrescription(patientId, {
+      const payload = {
         diagnosis: prescriptionDiagnosis.trim() || undefined,
         medications: normalized,
         instructions: prescriptionInstructions.trim() || undefined,
         followUpDate: followUpDate ? new Date(followUpDate).toISOString() : undefined
-      });
+      };
+      const saved = editingPrescriptionId
+        ? await updateDoctorPrescription(editingPrescriptionId, payload)
+        : await createDoctorPrescription(patientId, payload);
 
-      setPrescriptions((previous) => [created, ...previous]);
+      setPrescriptions((previous) => editingPrescriptionId
+        ? previous.map((item) => (item.id === editingPrescriptionId ? saved : item))
+        : [saved, ...previous]);
       setIsPrescriptionModalOpen(false);
+      setEditingPrescriptionId(null);
       setPrescriptionDiagnosis('');
       setPrescriptionInstructions('');
       setFollowUpDate('');
       setMedications([initialMedication()]);
       setError('');
     } catch {
-      setError('Unable to create prescription right now.');
+      setError(editingPrescriptionId ? 'Unable to update prescription right now.' : 'Unable to create prescription right now.');
     } finally {
       setIsCreatingPrescription(false);
+    }
+  }
+
+  function openEditPrescription(prescription: DoctorPrescription) {
+    setEditingPrescriptionId(prescription.id);
+    setPrescriptionDiagnosis(prescription.diagnosis || '');
+    setPrescriptionInstructions(prescription.instructions || '');
+    setFollowUpDate(prescription.followUpDate ? prescription.followUpDate.slice(0, 10) : '');
+    setMedications(prescription.medications.map((item) => ({
+      name: item.name,
+      dosage: item.dosage || '',
+      frequency: item.frequency || '',
+      duration: item.duration || ''
+    })));
+    setIsPrescriptionModalOpen(true);
+  }
+
+  async function onDeletePrescription(prescriptionId: string) {
+    if (!window.confirm('Delete this prescription? This cannot be undone.')) return;
+
+    try {
+      await deleteDoctorPrescription(prescriptionId);
+      setPrescriptions((previous) => previous.filter((item) => item.id !== prescriptionId));
+      setError('');
+    } catch {
+      setError('Unable to delete prescription right now.');
     }
   }
 
@@ -298,7 +333,7 @@ export default function DoctorPatientDetailPage() {
           <button type="button" className="doctor-secondary-button" onClick={onSendMessage}>
             Send Message
           </button>
-          <button type="button" className="doctor-primary-button" onClick={() => setIsPrescriptionModalOpen(true)}>
+          <button type="button" className="doctor-primary-button" onClick={() => { setEditingPrescriptionId(null); setIsPrescriptionModalOpen(true); }}>
             New Prescription
           </button>
           <button type="button" className="doctor-secondary-button" onClick={() => setActiveTab('appointments')}>
@@ -458,7 +493,7 @@ export default function DoctorPatientDetailPage() {
         <article className="doctor-card">
           <div className="doctor-card-head">
             <h3>Prescriptions Sent</h3>
-            <button type="button" className="doctor-primary-button" onClick={() => setIsPrescriptionModalOpen(true)}>
+            <button type="button" className="doctor-primary-button" onClick={() => { setEditingPrescriptionId(null); setIsPrescriptionModalOpen(true); }}>
               New Prescription
             </button>
           </div>
@@ -473,6 +508,10 @@ export default function DoctorPatientDetailPage() {
                     <p>{prescription.diagnosis || 'General care'}</p>
                     <small>{formatDate(prescription.issuedAt)}</small>
                   </header>
+                  <div className="doctor-inline-actions doctor-prescription-actions">
+                    <button type="button" className="doctor-link-button" onClick={() => openEditPrescription(prescription)}>Edit</button>
+                    <button type="button" className="doctor-link-button doctor-danger-link" onClick={() => onDeletePrescription(prescription.id)}>Delete</button>
+                  </div>
                   <ul>
                     {prescription.medications.map((medication) => (
                       <li key={`${prescription.id}-${medication.name}`}>
@@ -557,7 +596,7 @@ export default function DoctorPatientDetailPage() {
       {isPrescriptionModalOpen ? (
         <div className="doctor-modal-backdrop" role="presentation" onClick={() => setIsPrescriptionModalOpen(false)}>
           <article className="doctor-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-            <h3>Create Prescription</h3>
+            <h3>{editingPrescriptionId ? 'Edit Prescription' : 'Create Prescription'}</h3>
             <form className="doctor-form-grid" onSubmit={onCreatePrescription}>
               <label className="doctor-form-span-2">
                 Diagnosis
@@ -619,11 +658,11 @@ export default function DoctorPatientDetailPage() {
               </label>
 
               <div className="doctor-inline-actions wrap doctor-form-span-2">
-                <button type="button" className="doctor-secondary-button" onClick={() => setIsPrescriptionModalOpen(false)}>
+                <button type="button" className="doctor-secondary-button" onClick={() => { setIsPrescriptionModalOpen(false); setEditingPrescriptionId(null); }}>
                   Cancel
                 </button>
                 <button type="submit" className="doctor-primary-button" disabled={isCreatingPrescription}>
-                  {isCreatingPrescription ? 'Creating...' : 'Create Prescription'}
+                  {isCreatingPrescription ? 'Saving...' : editingPrescriptionId ? 'Save Changes' : 'Create Prescription'}
                 </button>
               </div>
             </form>
