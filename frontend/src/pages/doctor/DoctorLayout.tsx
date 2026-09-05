@@ -345,8 +345,8 @@ export default function DoctorLayout() {
                 <section className="doctor-notification-panel" id="doctor-notification-dropdown">
                   <div className="doctor-notification-head">
                     <h2>Notifications</h2>
-                    <button type="button" onClick={onMarkAllNotificationsRead}>
-                      Mark all read
+                    <button className="doctor-mark-all-button" type="button" onClick={onMarkAllNotificationsRead} aria-label="Mark all notifications as read" title="Mark all notifications as read">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m2.5 12.5 3.2 3.2 6.1-6.2" /><path d="m9.5 12.5 3.2 3.2 8.8-8.9" /></svg>
                     </button>
                   </div>
                   <ul className="doctor-notification-list">

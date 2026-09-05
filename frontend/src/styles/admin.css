@@ -255,6 +255,31 @@
   cursor: pointer;
 }
 
+.admin-mark-all-button {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 7px !important;
+}
+
+.admin-mark-all-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.admin-mark-all-button:hover,
+.admin-mark-all-button:focus-visible {
+  background: #d8f5e8;
+  outline: none;
+}
+
 .admin-content {
   padding: 1.2rem 1.4rem 1.8rem;
 }

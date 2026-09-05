@@ -642,7 +642,7 @@
   right: 0;
   top: calc(100% + 0.45rem);
   z-index: 30;
-  width: min(300px, calc(100vw - 2rem));
+  width: min(320px, calc(100vw - 2rem));
   border: 1px solid var(--doctor-border);
   background: #ffffff;
   border-radius: 12px;
@@ -671,6 +671,35 @@
   cursor: pointer;
 }
 
+.doctor-mark-all-button,
+.patient-mark-all-button {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 7px !important;
+}
+
+.doctor-mark-all-button svg,
+.patient-mark-all-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.doctor-mark-all-button:hover,
+.doctor-mark-all-button:focus-visible,
+.patient-mark-all-button:hover,
+.patient-mark-all-button:focus-visible {
+  background: #e8f9f2;
+  outline: none;
+}
+
 .doctor-notification-list {
   margin: 0;
   padding: 0;
@@ -684,7 +713,8 @@
 .doctor-notification-item {
   border: 1px solid var(--doctor-border);
   border-radius: 10px;
-  padding: 0.45rem;
+  min-height: 0;
+  padding: 0.65rem 0.7rem;
   display: flex;
   justify-content: space-between;
   gap: 0.6rem;
@@ -700,8 +730,27 @@
   margin: 0;
 }
 
+.doctor-notification-item h3 {
+  color: var(--doctor-text);
+  font-family: 'Sora', sans-serif;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
 .doctor-notification-item p {
   margin-top: 0.2rem;
+  color: var(--doctor-subtext);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.doctor-notification-item > div {
+  min-width: 0;
 }
 
 .doctor-notification-item.is-unread {
