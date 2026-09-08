@@ -28,6 +28,7 @@ export const ROUTE_PATHS = {
   doctor: {
     dashboard: '/doctor/dashboard',
     onboarding: '/doctor/onboarding',
+    profileWizard: '/doctor/profile-wizard',
     patients: '/doctor/patients',
     patientDetail: '/doctor/patients/:id',
     appointments: '/doctor/appointments',

@@ -5,6 +5,7 @@ import App from './App';
 import './styles/globals.css';
 import './styles/admin.css';
 import './styles/doctor.css';
+import './styles/doctor-onboarding.css';
 import './styles/patient.css';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
