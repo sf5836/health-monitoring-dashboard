@@ -22,7 +22,7 @@ async function getPublicBlogs(req, res, next) {
     const blogs = await Blog.find(filter)
       .sort({ publishedAt: -1, createdAt: -1 })
       .limit(limit)
-      .select('-content -coverImageUrl')
+      .select('-content')
       .populate('authorId', 'fullName')
       .lean();
 

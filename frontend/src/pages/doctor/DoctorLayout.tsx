@@ -20,6 +20,26 @@ type DoctorNavItem = {
   badgeKey?: 'messages' | 'notifications';
 };
 
+function isDoctorProfileComplete(profile: DoctorProfile): boolean {
+  const hasQualification = profile.qualifications.some((qualification) => qualification.trim().length > 0);
+  const requiredDocumentLabels = ['Medical License Document', 'Government ID (CNIC/Passport)', 'Degree Certificate(s)'];
+  const hasRequiredDocuments = requiredDocumentLabels.every((label) =>
+    profile.legalDocuments.some((document) => document.label === label && Boolean(document.fileName))
+  );
+
+  return Boolean(
+    profile.specialization?.trim() &&
+      profile.licenseNumber?.trim() &&
+      hasQualification &&
+      profile.experienceYears !== undefined &&
+      profile.hospital?.trim() &&
+      profile.bio?.trim() &&
+      profile.fee !== undefined &&
+      profile.availabilitySchedule.length > 0 &&
+      hasRequiredDocuments
+  );
+}
+
 const NAV_ITEMS: DoctorNavItem[] = [
   { label: 'Dashboard', icon: '📊', path: ROUTE_PATHS.doctor.dashboard },
   { label: 'My Patients', icon: '👥', path: ROUTE_PATHS.doctor.patients },
@@ -47,8 +67,16 @@ export default function DoctorLayout() {
 
     async function loadLayoutState() {
       try {
-        const [doctorProfile, inbox] = await Promise.all([getDoctorProfile(), getDoctorInboxOverview(50)]);
+        const doctorProfile = await getDoctorProfile();
 
+        if (cancelled) return;
+
+        if (!isDoctorProfileComplete(doctorProfile)) {
+          navigate(ROUTE_PATHS.doctor.onboarding, { replace: true });
+          return;
+        }
+
+        const inbox = await getDoctorInboxOverview(50);
         if (cancelled) return;
 
         setProfile(doctorProfile);

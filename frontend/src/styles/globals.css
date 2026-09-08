@@ -877,7 +877,10 @@ ul {
 .hm-privacy-intro-icon { display: grid; flex: 0 0 48px; place-items: center; width: 48px; height: 48px; border-radius: 14px; background: #c7f3e1; color: var(--hm-primary); }
 .hm-privacy-intro-icon svg { width: 27px; height: 27px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
 .hm-privacy-intro p { color: #164e3b; font-size: 1.03rem; line-height: 1.6; }
-.hm-privacy-layout { max-width: 1080px; display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 4rem; padding-top: 3rem; }
+.hm-privacy-layout { max-width: 1080px; display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 4rem; align-items: start; padding-top: 3rem; }
+.hm-privacy-toc { position: sticky; top: 106px; align-self: start; max-height: calc(100vh - 130px); overflow-y: auto; scrollbar-width: thin; }
+.hm-privacy-document { min-width: 0; }
+.hm-privacy-document > section { scroll-margin-top: 110px; }
 .hm-privacy-document section { padding-bottom: 3.2rem; }
 .hm-privacy-document h2 { font-size: 1.3rem; }
 .hm-data-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 1.35rem; }
