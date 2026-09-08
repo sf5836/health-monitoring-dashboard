@@ -59,7 +59,6 @@ export default function DoctorLayout() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [messageCount, setMessageCount] = useState(0);
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -235,7 +234,6 @@ export default function DoctorLayout() {
   }, [location.pathname]);
 
   const notificationButtonLabel = isNotificationPanelOpen ? 'Close notifications' : 'Open notifications';
-  const profileButtonLabel = isProfileMenuOpen ? 'Close profile menu' : 'Open profile menu';
 
   async function onMarkNotificationRead(notificationId: string) {
     try {
@@ -357,7 +355,6 @@ export default function DoctorLayout() {
                 aria-controls="doctor-notification-dropdown"
                 onClick={() => {
                   setIsNotificationPanelOpen((previous) => !previous);
-                  setIsProfileMenuOpen(false);
                 }}
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true" className="doctor-notification-icon">
@@ -412,12 +409,10 @@ export default function DoctorLayout() {
               <button
                 type="button"
                 className="doctor-profile-menu-button"
-                aria-label={profileButtonLabel}
-                aria-expanded={isProfileMenuOpen}
-                aria-controls="doctor-profile-dropdown"
+                aria-label="Open my profile"
                 onClick={() => {
-                  setIsProfileMenuOpen((previous) => !previous);
                   setIsNotificationPanelOpen(false);
+                  navigate(ROUTE_PATHS.doctor.profile);
                 }}
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true" className="doctor-profile-icon">
@@ -427,29 +422,6 @@ export default function DoctorLayout() {
                   />
                 </svg>
               </button>
-
-              {isProfileMenuOpen ? (
-                <div className="doctor-profile-menu" id="doctor-profile-dropdown">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsProfileMenuOpen(false);
-                      navigate(`${ROUTE_PATHS.doctor.profile}#photo`);
-                    }}
-                  >
-                    Edit photo
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsProfileMenuOpen(false);
-                      navigate(`${ROUTE_PATHS.doctor.profile}#edit`);
-                    }}
-                  >
-                    Update profile
-                  </button>
-                </div>
-              ) : null}
             </div>
           </div>
         </header>
