@@ -119,7 +119,16 @@ export default function DoctorOnboardingPage() {
   }
   async function saveProfile(submit = false) {
     const cleanedSlots = slots.filter((slot) => activeDays.includes(slot.day) && slot.startTime < slot.endTime);
-    await updateDoctorProfile({ specialization: specialization.trim(), licenseNumber: licenseNumber.trim() || undefined, qualifications: qualifications.map((item) => [item.degree, item.institution, item.year].filter(Boolean).join(' - ')).filter(Boolean), experienceYears: experienceYears ? Number(experienceYears) : undefined, hospital: hospital.trim() || undefined, fee: Number(inPersonFee || teleconsultationFee) || undefined, bio: bio.trim() || undefined, availability: `${activeDays.length} days per week`, availabilitySchedule: cleanedSlots, profilePhoto: photo ? { fileName: photo.fileName, contentType: photo.contentType, dataBase64: photo.dataBase64 } : undefined, legalDocuments: uploads.filter((item) => item.fileName && item.dataBase64).map(({ label, fileName, contentType, dataBase64 }) => ({ label, fileName, contentType: contentType || 'application/pdf', dataBase64 })) });
+    const legalDocuments = uploads
+      .filter((item) => item.fileName && item.dataBase64)
+      .map(({ label, fileName, contentType, dataBase64 }) => ({
+        label,
+        fileName,
+        contentType: contentType || 'application/pdf',
+        dataBase64
+      }));
+
+    await updateDoctorProfile({ specialization: specialization.trim(), licenseNumber: licenseNumber.trim() || undefined, qualifications: qualifications.map((item) => [item.degree, item.institution, item.year].filter(Boolean).join(' - ')).filter(Boolean), experienceYears: experienceYears ? Number(experienceYears) : undefined, hospital: hospital.trim() || undefined, fee: Number(inPersonFee || teleconsultationFee) || undefined, bio: bio.trim() || undefined, availability: `${activeDays.length} days per week`, availabilitySchedule: cleanedSlots, profilePhoto: photo ? { fileName: photo.fileName, contentType: photo.contentType, dataBase64: photo.dataBase64 } : undefined, legalDocuments: legalDocuments.length ? legalDocuments : undefined });
     if (submit) navigate(ROUTE_PATHS.doctor.pendingApproval, { replace: true });
   }
   async function nextStep() {

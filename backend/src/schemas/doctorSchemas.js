@@ -1,4 +1,4 @@
-const { z, objectId } = require('./common');
+const { z, objectId, legalDocumentContentType } = require('./common');
 
 const doctorIdParamsSchema = z.object({
   doctorId: objectId
@@ -110,9 +110,7 @@ const updateDoctorProfileSchema = z
         z.object({
           label: z.string().min(1).max(80).optional(),
           fileName: z.string().min(3),
-          contentType: z
-            .string()
-            .refine((value) => String(value).toLowerCase().includes('pdf'), 'Document must be PDF format'),
+          contentType: legalDocumentContentType,
           dataBase64: z.string().min(16)
         })
       )

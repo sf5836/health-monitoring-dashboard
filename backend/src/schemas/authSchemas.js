@@ -1,4 +1,4 @@
-const { z } = require('./common');
+const { z, legalDocumentContentType } = require('./common');
 
 const password = z.string().min(8, 'Password must be at least 8 characters');
 const email = z.string().email('Invalid email').transform((value) => value.toLowerCase());
@@ -12,9 +12,7 @@ const availabilitySlotSchema = z.object({
 const legalDocumentSchema = z.object({
   label: z.string().min(1).max(80).optional(),
   fileName: z.string().min(3),
-  contentType: z
-    .string()
-    .refine((value) => String(value).toLowerCase().includes('pdf'), 'Document must be PDF format'),
+  contentType: legalDocumentContentType,
   dataBase64: z.string().min(16)
 });
 

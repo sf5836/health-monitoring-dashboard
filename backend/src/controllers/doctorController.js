@@ -693,8 +693,13 @@ async function updateMyProfile(req, res, next) {
       }
     }
 
-    if (Array.isArray(legalDocuments)) {
-      doctorProfile.legalDocuments = await uploadLegalDocuments(legalDocuments);
+    if (Array.isArray(legalDocuments) && legalDocuments.length > 0) {
+      const uploadedDocuments = await uploadLegalDocuments(legalDocuments);
+      const uploadedLabels = new Set(uploadedDocuments.map((document) => document.label).filter(Boolean));
+      doctorProfile.legalDocuments = [
+        ...doctorProfile.legalDocuments.filter((document) => !document.label || !uploadedLabels.has(document.label)),
+        ...uploadedDocuments
+      ];
     }
 
     await Promise.all([user.save(), doctorProfile.save()]);
