@@ -70,7 +70,7 @@ function buildPayload(state: VitalFormState): VitalCreateInput {
   return {
     datetime: fromLocalDatetimeInput(state.datetime),
     bloodPressure:
-      systolic || diastolic
+      systolic !== undefined || diastolic !== undefined
         ? {
             systolic,
             diastolic
@@ -94,14 +94,14 @@ function buildPayload(state: VitalFormState): VitalCreateInput {
 function mapRecordToForm(record: PortalVitalRecord): VitalFormState {
   return {
     datetime: toLocalDatetimeInput(record.datetime),
-    systolic: record.bloodPressure?.systolic ? String(record.bloodPressure.systolic) : '',
-    diastolic: record.bloodPressure?.diastolic ? String(record.bloodPressure.diastolic) : '',
-    heartRate: record.heartRate ? String(record.heartRate) : '',
-    spo2: record.spo2 ? String(record.spo2) : '',
-    temperatureC: record.temperatureC ? String(record.temperatureC) : '',
-    glucoseValue: record.glucose?.value ? String(record.glucose.value) : '',
+    systolic: record.bloodPressure?.systolic != null ? String(record.bloodPressure.systolic) : '',
+    diastolic: record.bloodPressure?.diastolic != null ? String(record.bloodPressure.diastolic) : '',
+    heartRate: record.heartRate != null ? String(record.heartRate) : '',
+    spo2: record.spo2 != null ? String(record.spo2) : '',
+    temperatureC: record.temperatureC != null ? String(record.temperatureC) : '',
+    glucoseValue: record.glucose?.value != null ? String(record.glucose.value) : '',
     glucoseMode: record.glucose?.mode || 'fasting',
-    weightKg: record.weightKg ? String(record.weightKg) : '',
+    weightKg: record.weightKg != null ? String(record.weightKg) : '',
     notes: record.notes || ''
   };
 }
@@ -226,11 +226,23 @@ export default function PatientVitalsPage() {
     setError('');
     setSuccess('');
 
-    const payload = buildPayload(form);
-    if (Object.keys(payload).length === 0) {
-      setError('Please provide at least one vital field.');
+    const missingFields = [
+      !form.datetime.trim() && 'Date and Time',
+      !form.systolic.trim() && 'Systolic mmHg',
+      !form.diastolic.trim() && 'Diastolic mmHg',
+      !form.heartRate.trim() && 'Heart Rate',
+      !form.spo2.trim() && 'Oxygen Level (SpO2 %)',
+      !form.temperatureC.trim() && 'Temperature (C)',
+      !form.glucoseValue.trim() && 'Blood Glucose (mg/dL)',
+      !form.weightKg.trim() && 'Weight (kg)'
+    ].filter((field): field is string => Boolean(field));
+
+    if (missingFields.length > 0) {
+      setError(`Please fill in all required fields: ${missingFields.join(', ')}.`);
       return;
     }
+
+    const payload = buildPayload(form);
 
     try {
       setSubmitting(true);
@@ -321,7 +333,7 @@ export default function PatientVitalsPage() {
         </div>
       </header>
 
-      {error ? <p className="patient-error-banner">{error}</p> : null}
+      {error ? <p className="patient-error-banner" role="alert">{error}</p> : null}
       {success ? <p className="patient-success-banner">{success}</p> : null}
 
       <article className="patient-card patient-vitals-entry-card">
@@ -330,11 +342,12 @@ export default function PatientVitalsPage() {
           <p>{new Date().toLocaleDateString()}</p>
         </div>
 
-        <form className="patient-vitals-form" onSubmit={handleSubmit}>
+        <form className="patient-vitals-form" onSubmit={handleSubmit} noValidate>
           <label className="patient-vitals-row-full">
             Date and Time
             <input
               type="datetime-local"
+              required
               value={form.datetime}
               onChange={(event) => setForm((previous) => ({ ...previous, datetime: event.target.value }))}
             />
@@ -348,6 +361,7 @@ export default function PatientVitalsPage() {
                   Systolic mmHg
                   <input
                     type="number"
+                    required
                     value={form.systolic}
                     onChange={(event) => setForm((previous) => ({ ...previous, systolic: event.target.value }))}
                   />
@@ -356,6 +370,7 @@ export default function PatientVitalsPage() {
                   Diastolic mmHg
                   <input
                     type="number"
+                    required
                     value={form.diastolic}
                     onChange={(event) => setForm((previous) => ({ ...previous, diastolic: event.target.value }))}
                   />
@@ -368,6 +383,7 @@ export default function PatientVitalsPage() {
               <span className="patient-vitals-fieldset-title">Heart Rate</span>
               <input
                 type="number"
+                required
                 value={form.heartRate}
                 onChange={(event) => setForm((previous) => ({ ...previous, heartRate: event.target.value }))}
               />
@@ -380,6 +396,7 @@ export default function PatientVitalsPage() {
               <span className="patient-vitals-fieldset-title">Oxygen Level (SpO2 %)</span>
               <input
                 type="number"
+                required
                 value={form.spo2}
                 onChange={(event) => setForm((previous) => ({ ...previous, spo2: event.target.value }))}
               />
@@ -390,6 +407,7 @@ export default function PatientVitalsPage() {
               <span className="patient-vitals-fieldset-title">Temperature (C)</span>
               <input
                 type="number"
+                required
                 step="0.1"
                 value={form.temperatureC}
                 onChange={(event) =>
@@ -406,6 +424,7 @@ export default function PatientVitalsPage() {
                 <span className="patient-vitals-fieldset-title">Blood Glucose (mg/dL)</span>
                 <input
                   type="number"
+                  required
                   value={form.glucoseValue}
                   onChange={(event) =>
                     setForm((previous) => ({ ...previous, glucoseValue: event.target.value }))
@@ -439,6 +458,7 @@ export default function PatientVitalsPage() {
               <span className="patient-vitals-fieldset-title">Weight (kg)</span>
               <input
                 type="number"
+                required
                 step="0.1"
                 value={form.weightKg}
                 onChange={(event) => setForm((previous) => ({ ...previous, weightKg: event.target.value }))}
